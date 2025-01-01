@@ -1,0 +1,108 @@
+.personal-info-section {
+    margin: 20px auto;
+    max-width: 900px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+    padding: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.info-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.text-info {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.title-input {
+    font-size: 24px;
+    font-weight: bold;
+    border: none;
+    border-bottom: 1px solid #ccc;
+    padding: 5px;
+    margin-bottom: 10px;
+    width: 100%;
+    max-width: 400px; /* 设置输入框最大宽度 */
+    min-width: 200px; /* 设置输入框最小宽度 */
+}
+
+.input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.info-input {
+    flex: 1;
+    padding: 8px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    max-width: 400px; /* 设置输入框最大宽度 */
+    min-width: 200px; /* 设置输入框最小宽度 */
+}
+
+.add-button,
+.remove-button {
+    background-color: #f5f5f5;
+    color: #666;
+    border: 1px solid #ccc;
+    width: 40px; /* 确保宽高一致 */
+    height: 40px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 50%; /* 圆形按钮 */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0; /* 去掉 padding，使用宽高控制尺寸 */
+}
+
+.add-button:hover,
+.remove-button:hover {
+    background-color: #e0e0e0;
+}
+
+.photo-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 60px; /* 照片框向下移动 */
+}
+
+.profile-photo {
+    width: 130px;
+    height: 180px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #eaeaea;
+}
+
+.photo-placeholder {
+    color: #666;
+    text-align: center;
+}
+
+.photo-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.photo-upload {
+    display: none; /* 隐藏文件选择按钮 */
+}
