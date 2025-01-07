@@ -6,32 +6,34 @@ const Editor = ({ onSave }) => {
     const quillRef = useRef(null);
 
     useEffect(() => {
-        // 初始化 Quill 编辑器
-        const quill = new Quill('#quill-editor', {
-            theme: 'snow',
-            placeholder: 'Enter your content...',
-            modules: {
-                toolbar: [
-                    ['bold', 'italic', 'underline'], // 字体样式
-                    [{ list: 'ordered' }, { list: 'bullet' }], // 有序和无序列表
-                    ['link'], // 超链接
-                ],
-            },
-        });
-
-        quillRef.current = quill;
+        // Prevent duplicate initialization
+        if (!quillRef.current) {
+            const quill = new Quill('#editor', {
+                theme: 'snow',
+                modules: {
+                    toolbar: [
+                        [{ header: [1, 2, 3, false] }],
+                        ['bold', 'italic', 'underline', 'link'],
+                        [{ list: 'ordered' }, { list: 'bullet' }],
+                        ['clean'],
+                    ],
+                },
+            });
+            quillRef.current = quill;
+        }
     }, []);
 
     const handleSave = () => {
         if (quillRef.current) {
-            const htmlContent = quillRef.current.root.innerHTML; // 提取 HTML 内容
-            onSave(htmlContent); // 将 HTML 内容传递给父组件
+            const htmlContent = quillRef.current.root.innerHTML; // Extract HTML content
+            onSave(htmlContent); // Pass HTML content to parent
         }
     };
 
     return (
         <div>
-            <div id="quill-editor" style={{ height: '200px', marginBottom: '20px' }}></div>
+            {/* Quill Editor */}
+            <div id="editor" style={{ height: '200px', marginBottom: '20px' }}></div>
             <button onClick={handleSave}>Save</button>
         </div>
     );
