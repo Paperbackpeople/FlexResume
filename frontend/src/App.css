@@ -1,38 +1,220 @@
+/* =========================
+   1. 整个布局容器
+   ========================= */
+
+/* 父容器 */
+.container {
+  display: flex;
+  /* 使用 flexbox 布局 */
+  height: 100vh;
+  /* 让内容占满整个视口高度 */
+  justify-content: space-between;
+  /* 两个子区域左右排列 */
+}
+
+/* 左侧区域 (App) */
 .App {
+  flex: 1;
+  /* 左侧区域占 50% */
+  padding: 20px;
+  /* 添加一些内边距 */
+  overflow-y: auto;
+  /* 如果内容过长，允许滚动 */
+  text-align: center;
+  /* 内容居中 */
+}
+
+/* 中间分割线 */
+.divider {
+  width: 1px;
+  background-color: #ccc;
+  margin: 0 10px;
+  height: 100%;
+}
+
+/* 右侧区域 (Preview) */
+.preview {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
+/* 在左侧各个 section 外包一层边框、圆角 */
+.PersonalInfo-border,
+.Education-border,
+.Project-border {
+  background-color: #f9f9f9;
+  border-radius: 10px;
+  margin: 20px auto;
+  padding: 15px;
+  box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* 预览区可以自行决定要不要边框 */
+.preview-border {
+  border: 2px solid #a4a1a1;
+  border-radius: 10px;
+  padding: 10px;
+  height: 90%;
+}
+
+
+/* 若不需要大圆形渐变，可以移除 */
+.overlay {
+  height: 200vw;
+  width: 200vw;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  /* 背景颜色或渐变可自定义 */
+  /* z-index: -1;  <-- 若需要它在背后，可加上 */
+}
+
+.nav {
+  /* 保留原先的外边距，保证在页面中的位置 */
+  margin-top: 20px;
+
+  /* 以下为示例中的风格，可做适当调优 */
+  padding: 12px 5px;
+  border-radius: 15px;
+  border: 1px solid #6e6b71;
+  background-color: #f9f9f9; 
+  position: relative;
+  z-index: 99; /* 确保导航在最前 */
+}
+
+/* tabs 列表 */
+.tabs {
+  display: flex;
+  width: 100%;
+  justify-content: space-around;
+  list-style-type: none;
+  margin: 0;  /* 避免 ul 默认外边距 */
+  padding: 0; 
+}
+
+/* 每个 tab 项 */
+.tab {
+  padding: 12px 22px;
+  background-color: #e0efff;
+  color: #007bff;
+  margin-right: 15px; 
+  border-radius: 55px;
+  text-align: center;
+  white-space: nowrap;
+  transition: 0.3s ease;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  flex-basis: 120px;
+
+  /* 若你希望所有 Tab 都能容纳文字，可调大 max-width 或去掉 */
+  max-width: 0px; /* 关键：让非激活时缩小，激活时展开 */
+}
+
+/* Hover 效果，可根据需要保留或移除 */
+.tab:hover {
+  background-color: #d9f3ff;
+  color: #007BFF;
+}
+
+/* 激活状态 */
+.tab-is-active {
+  max-width: 100px; /* 变大，显示文字 */
+  box-shadow: 2px 2px 12px currentColor;
+  /* 可以加个显眼的背景色，也可以用你原先的 .tab-is-active 样式 */
+  /* background-color: #007BFF; */
+  /* color: #fff; */
+}
+
+/* 图标 & 文字 */
+.tab-circle {
+  position: absolute;
+  height: 30px;
+  width: 30px;
+  border-radius: 50%;
+  border: 2px solid #007BFF;
+  z-index: 10;
+  opacity: 0;
+  left: 30px;
   pointer-events: none;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.tab-icon {
+  margin-right: 1px;
+  font-size: 18px;
+  vertical-align: middle;
+  position: relative;
+  right: 8px;
+  top: -1px;
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+.tab-name {
+  font-size: 15px;
+  font-weight: 500;
+  position: relative;
+  transition: 0.3s ease;
+  top: 1px;
+  opacity: 0; /* 非激活时隐藏文字 */
 }
 
-.App-link {
-  color: #61dafb;
+/* 当 tab 变为 .tab-is-active 后，文字出现 */
+.tab-is-active .tab-name {
+  opacity: 1;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* 给每种 tab 增加不同的颜色（可选） */
+.tab-bookmark {
+  background: rgba(33, 84, 151, 0.386);
+  color: #007BFF;
+  border: 2px solid currentColor;
 }
+
+.tab-burn {
+  background: rgba(111, 86, 170, 0.3);
+  color: #928f96;
+  border: 2px solid currentColor;
+}
+
+.tab-clipboard {
+  background: rgba(164, 29, 110, 0.3);
+  color: #d93479;
+  border: 2px solid currentColor;
+}
+
+.tab-comment {
+  background: rgba(51, 139, 7, 0.3);
+  color: #16c730;
+  border: 2px solid currentColor;
+}
+
+.tab-bell {
+  background: rgba(131, 139, 7, 0.3);
+  border: 2px solid currentColor;
+  color: #add934;
+}
+
+/* 如果需要全局链接或其他样式，可以保留 */
+a {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  color: #ffffff;
+  font-size: 18px;
+  background-color: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(15px);
+  padding: 10px 0;
+  margin-top: 20px;
+  box-shadow: 0 25px 23px rgba(0, 0, 0, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+}
+
+i.fab {
+  color: #ff0000;
+}
+
+

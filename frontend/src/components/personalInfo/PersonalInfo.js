@@ -109,10 +109,7 @@ const PersonalInfo = () => {
               </div>
             </div>
           ))}
-          {/* 保存按钮 */}
-          <button onClick={handleSave} className="save-button">
-            Save to Database
-          </button>
+
         </div>
 
         {/* 右侧照片 */}

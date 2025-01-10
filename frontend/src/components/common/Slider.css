@@ -1,0 +1,42 @@
+/* 外层容器 */
+.slider {
+    position: relative;
+    overflow: hidden; /* 隐藏溢出 */
+    width: 100%;
+    /* 视需求可加固定高度, 也可自适应子内容 */
+  }
+  
+  /* 内层内容，横向排列所有 slide */
+  .slider-content {
+    display: flex;
+    transition: transform 0.5s ease-in-out; /* 动画过渡 */
+  }
+  
+  /* 每一页（卡片）占满容器大小 */
+  .slide {
+    flex: 0 0 100%; 
+    box-sizing: border-box;
+    padding: 0 10px; 
+  }
+  
+  /* 控制按钮布局 */
+  .slider-controls {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  
+  .slider-button {
+    padding: 8px 16px;
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .slider-button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  

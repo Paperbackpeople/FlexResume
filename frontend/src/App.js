@@ -1,44 +1,59 @@
-import React from 'react';
+import React, { useState } from 'react';
 import 'quill/dist/quill.snow.css'; // 引入 Quill 样式
-import PersonalInfo from './components/PersonalInfo';
+import PersonalInfo from './components/personalInfo/PersonalInfo';
+import EducationSlider from './components/education/EducationSlider';
+import ProjectSliderWrapper from './components/project/ProjectSliderWrapper';
+import EducationSliderWapper from './components/education/ EducationSliderWrapper';
+
 import './App.css';
 
-// 创建 Quill 的 Context
-
 function App() {
+    const [activeSection, setActiveSection] = useState('Personal Info');
+
     return (
-        <div className="App">
-            <h1>Resume Builder</h1>
-            {/* 传递 Quill Context 给子组件 */}
-            <PersonalInfo/>
-            {/* 隐藏的全局 Quill 容器 */}
+        <div className="container">
+            <div className="App">
+                <h1>Resume Builder</h1>
+                <nav className="nav">
+                    <ul className="tabs">
+                        {[
+                            { name: 'Personal Info', icon: 'fa-user' },
+                            { name: 'Education', icon: 'fa-graduation-cap' },
+                            { name: 'Project', icon: 'fa-code' },
+                            { name: 'Internship', icon: 'fa-building' },
+                            { name: 'Work', icon: 'fa-briefcase' },
+                            { name: 'Skills', icon: 'fa-lightbulb' }
+                        ].map((section, index) => (
+                            <li
+                                key={section.name}
+                                className={`tabs-item tab ${activeSection === section.name ? 'tab-is-active' : ''}`}
+                                onClick={() => setActiveSection(section.name)}
+                            >
+                                <div className="tab-circle"></div>
+                                <i className={`fa ${section.icon} tab-icon`}></i>
+                                <span className="tab-name">{section.name}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </nav>
+                {/* Dynamic Sections */}
+                {activeSection === 'Personal Info' && (
+                    <div className="PersonalInfo-border">
+                        <PersonalInfo />
+                    </div>
+                )}
+                {activeSection === 'Education' && <EducationSliderWapper />}
+                {activeSection === 'Project' && <ProjectSliderWrapper />}
+                {activeSection === 'Internship' && <div>Internship Section</div>}
+                {activeSection === 'Work' && <div>Work Experience Section</div>}
+                {activeSection === 'Skills' && <div>Skills Section</div>}
+            </div>
+            <div className="divider"></div> {/* 中间分割线 */}
+            <div className="preview">
+                <h1>Preview</h1>
+            </div>
         </div>
     );
 }
-
-// export default App;
-// import React, { useState } from 'react';
-// import Editor from './components/Editor';
-
-// const App = () => {
-//     const [savedContent, setSavedContent] = useState('');
-
-//     const handleSave = (content) => {
-//         console.log('Saved Content:', content); // 模拟保存到数据库
-//         setSavedContent(content); // 保存到 state，用于展示
-//     };
-
-//     return (
-//         <div>
-//             <h1>Quill to HTML Demo</h1>
-//             <Editor onSave={handleSave} />
-//             <h2>Rendered HTML:</h2>
-//             <div
-//                 dangerouslySetInnerHTML={{ __html: savedContent }}
-//                 style={{ border: '1px solid #ccc', padding: '10px', marginTop: '20px' }}
-//             />
-//         </div>
-//     );
-// };
 
 export default App;
