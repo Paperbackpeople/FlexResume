@@ -1,6 +1,4 @@
-/* =========================
-   1. 整个布局容器
-   ========================= */
+
 
 /* 父容器 */
 .container {
@@ -201,6 +199,12 @@
 
 i.fab {
   color: #ff0000;
+}
+.section {
+  display: none;
+}
+.section.is-visible {
+  display: block;
 }
 
 

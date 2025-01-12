@@ -27,9 +27,12 @@ const Internship = ({ index, isLast, addInternship, removeInternship }) => {
     // detailContent 和 otherContent 的富文本编辑器
     const detailEditorRef = useRef(null);
     const otherEditorRef = useRef(null);
+    const quillRef = useRef(null);
+
 
     // 用于在初始化或组件挂载后，创建 Quill 实例
     useEffect(() => {
+        if(quillRef.current) return;
         if (!detailEditorRef.current) {
             detailEditorRef.current = new Quill(`#detailEditor-${index}`, {
                 theme: 'snow',

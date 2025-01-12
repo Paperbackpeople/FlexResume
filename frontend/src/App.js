@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import 'quill/dist/quill.snow.css'; // 引入 Quill 样式
 import PersonalInfo from './components/personalInfo/PersonalInfo';
 import ProjectSliderWrapper from './components/project/ProjectSliderWrapper';
@@ -11,7 +11,31 @@ import './App.css';
 
 function App() {
     const [activeSection, setActiveSection] = useState('Personal Info');
+    const [username, setUsername] = useState('');
+    const [version, setVersion] = useState(1);
+    const [isSmallScreen, setIsSmallScreen] = useState(false);
 
+    // 动态检测屏幕大小
+    useEffect(() => {
+        const handleResize = () => {
+            // 如果屏幕宽度小于 768px，认为是小屏幕
+            setIsSmallScreen(window.innerWidth < 768);
+        };
+
+        // 初始化检测
+        handleResize();
+
+        // 添加事件监听
+        window.addEventListener('resize', handleResize);
+
+        // 清理事件监听
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+    useEffect(() => {
+        // 模拟从 API 或登录状态中获取
+        setUsername('zhaoyu');
+        setVersion(1);
+    }, []);
     return (
         <div className="container">
             <div className="App">
@@ -19,12 +43,12 @@ function App() {
                 <nav className="nav">
                     <ul className="tabs">
                         {[
-                            { name: 'Personal Info', icon: 'fa-user' },
-                            { name: 'Education', icon: 'fa-graduation-cap' },
-                            { name: 'Project', icon: 'fa-code' },
-                            { name: 'Internship', icon: 'fa-building' },
-                            { name: 'Work', icon: 'fa-briefcase' },
-                            { name: 'Skills', icon: 'fa-lightbulb' }
+                            {name: 'Personal Info', icon: 'fa-user'},
+                            {name: 'Education', icon: 'fa-graduation-cap'},
+                            {name: 'Project', icon: 'fa-code'},
+                            {name: 'Internship', icon: 'fa-building'},
+                            {name: 'Work', icon: 'fa-briefcase'},
+                            {name: 'Skills', icon: 'fa-lightbulb'}
                         ].map((section, index) => (
                             <li
                                 key={section.name}
@@ -39,21 +63,35 @@ function App() {
                     </ul>
                 </nav>
                 {/* Dynamic Sections */}
-                {activeSection === 'Personal Info' && (
-                    <div className="PersonalInfo-border">
-                        <PersonalInfo />
+                <div className="dynamic-sections">
+                    <div className={`section ${activeSection === 'Personal Info' ? 'is-visible' : 'is-hidden'}`}>
+                        <PersonalInfo/>
+                    </div>
+                    <div className={`section ${activeSection === 'Education' ? 'is-visible' : 'is-hidden'}`}>
+                        <EducationSliderWapper/>
+                    </div>
+                    <div className={`section ${activeSection === 'Project' ? 'is-visible' : 'is-hidden'}`}>
+                        <ProjectSliderWrapper/>
+                    </div>
+                    <div className={`section ${activeSection === 'Internship' ? 'is-visible' : 'is-hidden'}`}>
+                        <InternshipSliderWrapper/>
+                    </div>
+                    <div className={`section ${activeSection === 'Work' ? 'is-visible' : 'is-hidden'}`}>
+                        <WorkExperienceSliderWrapper/>
+                    </div>
+                    <div className={`section ${activeSection === 'Skills' ? 'is-visible' : 'is-hidden'}`}>
+                        <Skill username={username} version={version}/>
+                    </div>
+                </div>
+            </div>
+            {/* 中间分割线 */}
+            {!isSmallScreen && (<div className="divider"></div>)}
+
+            {!isSmallScreen &&
+                (<div className="preview">
+                        <h1>Preview</h1>
                     </div>
                 )}
-                {activeSection === 'Education' && <EducationSliderWapper />}
-                {activeSection === 'Project' && <ProjectSliderWrapper />}
-                {activeSection === 'Internship' && <InternshipSliderWrapper />}
-                {activeSection === 'Work' && <WorkExperienceSliderWrapper />}
-                {activeSection === 'Skills' && <Skill />}
-            </div>
-            <div className="divider"></div> {/* 中间分割线 */}
-            <div className="preview">
-                <h1>Preview</h1>
-            </div>
         </div>
     );
 }

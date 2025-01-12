@@ -7,3 +7,7 @@
     padding: 20px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+.skill-preview {
+    text-align: left; /* 改为左对齐 */
+    margin: 20px 0; /* 可选，调整上下间距 */
+}

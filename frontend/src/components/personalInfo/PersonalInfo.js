@@ -4,6 +4,8 @@ import axios from 'axios';
 
 const PersonalInfo = () => {
   const [inputs, setInputs] = useState({
+    username: 'zhaoyu',
+    version: 1,
     profilePhoto: '',
     fields: [{ label: '', value: '' }]
   });
@@ -28,14 +30,35 @@ const PersonalInfo = () => {
   }, [inputs]);
 
   // 保存数据到后端
+// 修改后的保存数据到后端方法
   const savePersonalInfo = async (data) => {
     try {
-      const response = await axios.post('/api/personal-info', data);
-      console.log('Saved successfully:', response.data);
+      const response = await axios.post('/api/personal-info', data); // 增加保存 username 和 version
+      console.log('保存成功:', response.data);
     } catch (error) {
-      console.error('Error saving personal info:', error);
+      console.error('保存个人信息出错:', error);
     }
   };
+
+// 新增从后端获取数据的方法
+  const fetchPersonalInfo = async (username, version) => {
+    try {
+      const response = await axios.get(`/api/personal-info/${username}/${version}`);
+      const fetchedData = response.data;
+      if (fetchedData) {
+        setInputs(fetchedData);
+      }
+    } catch (error) {
+      console.error('获取个人信息出错:', error);
+    }
+  };
+
+// 使用 useEffect 在组件加载时调用 fetchPersonalInfo
+  useEffect(() => {
+    const username = 'zhaoyu'; // 假设是固定的，实际可通过登录信息动态获取
+    const version = 1; // 假设是固定的版本号
+    fetchPersonalInfo(username, version);
+  }, []);
 
   // 更新输入框内容
   const handleFieldChange = (index, key, newValue) => {

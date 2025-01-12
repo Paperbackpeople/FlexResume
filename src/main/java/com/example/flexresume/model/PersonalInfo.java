@@ -1,17 +1,24 @@
 package com.example.flexresume.model;
 
-import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.annotation.Id;
 import lombok.Data;
 import java.util.List;
 
 @Data
-@Document(collection = "personal_info") // MongoDB 集合名称
+@Document(collection = "personal_info")
 public class PersonalInfo {
     @Id
-    private String id; // MongoDB 自动生成的 ID
-    private String title; // 对应“个人信息”标题
-    private List<Field> fields; // 包含标题和输入值的列表
+    private String id;
+
+    @Indexed(unique = true) // 全局唯一索引，确保 username 不重复
+    private String username; // 用户名
+
+    private int version; // 版本号，每个用户可以有多个版本
+
+    private List<Field> fields; // 包含字段列表
+    private String profilePhoto; // 个人照片
 
     @Data
     public static class Field {
