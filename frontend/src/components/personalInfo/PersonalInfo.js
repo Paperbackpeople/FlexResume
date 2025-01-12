@@ -1,19 +1,40 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './PersonalInfo.css';
 import axios from 'axios';
 
 const PersonalInfo = () => {
   const [inputs, setInputs] = useState({
-    title: '个人信息',
+    profilePhoto: '',
     fields: [{ label: '', value: '' }]
   });
 
-  const [photo, setPhoto] = useState(null);
+  const saveTimeout = useRef(null); // 用于存储定时器的引用
   const fileInputRef = useRef(null);
 
-  // 更新“个人信息”标题
-  const handleTitleChange = (value) => {
-    setInputs((prev) => ({ ...prev, title: value }));
+  // 自动保存逻辑
+  useEffect(() => {
+    if (saveTimeout.current) {
+      clearTimeout(saveTimeout.current); // 清除已有的定时器
+    }
+
+    // 设置新的定时器，10 秒后保存数据
+    saveTimeout.current = setTimeout(() => {
+      const dataToSave = inputs;
+      savePersonalInfo(dataToSave);
+    }, 10000);
+
+    // 清理定时器
+    return () => clearTimeout(saveTimeout.current);
+  }, [inputs]);
+
+  // 保存数据到后端
+  const savePersonalInfo = async (data) => {
+    try {
+      const response = await axios.post('/api/personal-info', data);
+      console.log('Saved successfully:', response.data);
+    } catch (error) {
+      console.error('Error saving personal info:', error);
+    }
   };
 
   // 更新输入框内容
@@ -42,7 +63,7 @@ const PersonalInfo = () => {
   const handlePhotoUpload = (file) => {
     const reader = new FileReader();
     reader.onload = () => {
-      setPhoto(reader.result);
+      setInputs((prev) => ({ ...prev, profilePhoto: reader.result }));
     };
     reader.readAsDataURL(file);
   };
@@ -51,34 +72,13 @@ const PersonalInfo = () => {
     fileInputRef.current?.click();
   };
 
-  // 保存数据到后端
-  const savePersonalInfo = async (data) => {
-    try {
-      const response = await axios.post('/api/personal-info', data);
-      console.log(response.data);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // 调用保存函数
-  const handleSave = () => {
-    const dataToSave = inputs; // 获取当前输入数据
-    savePersonalInfo(dataToSave); // 调用 API 保存数据
-  };
-
   return (
     <div className="personal-info-section">
       <div className="info-container">
         {/* 左侧内容 */}
         <div className="text-info">
           {/* 标题：个人信息 */}
-          <input
-            type="text"
-            value={inputs.title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            className="title-input"
-          />
+          <label className="info-title">个人信息：</label>
           {inputs.fields.map((field, index) => (
             <div key={index} className="input-row">
               {/* 左侧：标题 */}
@@ -109,7 +109,6 @@ const PersonalInfo = () => {
               </div>
             </div>
           ))}
-
         </div>
 
         {/* 右侧照片 */}
@@ -119,8 +118,8 @@ const PersonalInfo = () => {
             onClick={openFilePicker}
             style={{ cursor: 'pointer' }}
           >
-            {photo ? (
-              <img src={photo} alt="Uploaded" className="photo-preview" />
+            {inputs.profilePhoto ? (
+              <img src={inputs.profilePhoto} alt="Uploaded" className="photo-preview" />
             ) : (
               <div className="photo-placeholder">Click to Upload</div>
             )}

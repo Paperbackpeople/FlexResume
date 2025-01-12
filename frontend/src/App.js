@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import 'quill/dist/quill.snow.css'; // 引入 Quill 样式
 import PersonalInfo from './components/personalInfo/PersonalInfo';
-import EducationSlider from './components/education/EducationSlider';
 import ProjectSliderWrapper from './components/project/ProjectSliderWrapper';
 import EducationSliderWapper from './components/education/ EducationSliderWrapper';
+import InternshipSliderWrapper from './components/internship/InternshipSliderWrapper';
+import WorkExperienceSliderWrapper from './components/workexperience/WorkExperienceSliderWrapper';
+import Skill from './components/skill/Skill';
 
 import './App.css';
 
@@ -44,9 +46,9 @@ function App() {
                 )}
                 {activeSection === 'Education' && <EducationSliderWapper />}
                 {activeSection === 'Project' && <ProjectSliderWrapper />}
-                {activeSection === 'Internship' && <div>Internship Section</div>}
-                {activeSection === 'Work' && <div>Work Experience Section</div>}
-                {activeSection === 'Skills' && <div>Skills Section</div>}
+                {activeSection === 'Internship' && <InternshipSliderWrapper />}
+                {activeSection === 'Work' && <WorkExperienceSliderWrapper />}
+                {activeSection === 'Skills' && <Skill />}
             </div>
             <div className="divider"></div> {/* 中间分割线 */}
             <div className="preview">

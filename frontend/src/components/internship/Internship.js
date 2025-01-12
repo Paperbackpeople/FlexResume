@@ -1,26 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
-import './Project.css';
+import './Internship.css';
 import axios from 'axios';
 // 引入 Quill 相关
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 
-const Project = ({ index, isLast, addProject, removeProject }) => {
-    const [projectInfo, setProjectInfo] = useState({
-        time: '',
-        name: '',
+const Internship = ({ index, isLast, addInternship, removeInternship }) => {
+    const [internshipInfo, setInternshipInfo] = useState({
+        companyName: '',
+        position: '',
+        duration: '',
         summary: '',
         // 可选的详情（detail）
-        detailTitle: 'Project Details', // 默认标题，可让用户自行修改
+        detailTitle: 'Internship Details', // 默认标题，可让用户自行修改
         detailContent: '',
-        // 可选视频或图片
-        mediaType: '', // 'image' or 'video'
+        // 可选其他信息
+        otherTitle: 'Additional Info',
+        otherContent: '',
+        // 以下是为媒体上传功能新增的字段
+        mediaType: '',
         mediaFile: null,
         mediaPreview: null,
         mediaDescription: '',
-        // 可选其他信息
-        otherTitle: 'Other Details',
-        otherContent: '',
     });
 
     // detailContent 和 otherContent 的富文本编辑器
@@ -43,7 +44,7 @@ const Project = ({ index, isLast, addProject, removeProject }) => {
             });
 
             detailEditorRef.current.on('text-change', () => {
-                setProjectInfo((prev) => ({
+                setInternshipInfo((prev) => ({
                     ...prev,
                     detailContent: detailEditorRef.current.root.innerHTML,
                 }));
@@ -64,7 +65,7 @@ const Project = ({ index, isLast, addProject, removeProject }) => {
             });
 
             otherEditorRef.current.on('text-change', () => {
-                setProjectInfo((prev) => ({
+                setInternshipInfo((prev) => ({
                     ...prev,
                     otherContent: otherEditorRef.current.root.innerHTML,
                 }));
@@ -74,15 +75,7 @@ const Project = ({ index, isLast, addProject, removeProject }) => {
 
     // 处理基础信息
     const handleInputChange = (key, value) => {
-        setProjectInfo((prev) => ({ ...prev, [key]: value }));
-
-        // 如果是 detailTitle 或 otherTitle，更新对应的 label
-        if (key === 'detailTitle') {
-            document.querySelector(`#detailLabel-${index}`).textContent = value;
-        }
-        if (key === 'otherTitle') {
-            document.querySelector(`#otherLabel-${index}`).textContent = value;
-        }
+        setInternshipInfo((prev) => ({ ...prev, [key]: value }));
     };
 
     // 处理文件选择（图片或视频）
@@ -90,21 +83,20 @@ const Project = ({ index, isLast, addProject, removeProject }) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // 判断文件类型
         let fileType = '';
         if (file.type.includes('image')) {
             fileType = 'image';
         } else if (file.type.includes('video')) {
             fileType = 'video';
         } else {
-            alert('仅支持图片或视频文件');
+            alert('Only images or videos are supported.');
             return;
         }
 
         // 生成预览
         const reader = new FileReader();
         reader.onload = () => {
-            setProjectInfo((prev) => ({
+            setInternshipInfo((prev) => ({
                 ...prev,
                 mediaType: fileType,
                 mediaFile: file,
@@ -116,7 +108,7 @@ const Project = ({ index, isLast, addProject, removeProject }) => {
 
     // 删除上传的媒体内容
     const removeMedia = () => {
-        setProjectInfo((prev) => ({
+        setInternshipInfo((prev) => ({
             ...prev,
             mediaType: '',
             mediaFile: null,
@@ -126,46 +118,26 @@ const Project = ({ index, isLast, addProject, removeProject }) => {
     };
 
     // 保存到后端
-    const saveProjectInfo = async () => {
+    const saveInternshipInfo = async () => {
         try {
-            const formData = new FormData();
-            formData.append('time', projectInfo.time);
-            formData.append('name', projectInfo.name);
-            formData.append('summary', projectInfo.summary);
-            formData.append('detailTitle', projectInfo.detailTitle);
-            formData.append('detailContent', projectInfo.detailContent);
-            formData.append('mediaType', projectInfo.mediaType);
-            formData.append('mediaDescription', projectInfo.mediaDescription);
-            formData.append('otherTitle', projectInfo.otherTitle);
-            formData.append('otherContent', projectInfo.otherContent);
-
-            if (projectInfo.mediaFile) {
-                formData.append('mediaFile', projectInfo.mediaFile);
-            }
-
-            const response = await axios.post('/api/project-info', formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-            });
-
-            console.log('项目保存成功:', response.data);
+            const response = await axios.post('/api/internship-info', internshipInfo);
+            console.log('实习信息保存成功:', response.data);
         } catch (error) {
-            console.error('保存项目错误:', error);
+            console.error('保存实习信息错误:', error);
         }
     };
 
     return (
-        <div className="project-container">
-            <div className="project-section">
+        <div className="internship-container">
+            <div className="internship-section">
                 <div className="section-header">
-                    <h2>Project {index}</h2>
+                    <h2>Internship {index}</h2>
                     <div className="button-group">
-                        <button className="remove-newButton" onClick={removeProject}>
+                        <button className="remove-newButton" onClick={removeInternship}>
                             -
                         </button>
                         {isLast && (
-                            <button className="add-newButton" onClick={addProject}>
+                            <button className="add-newButton" onClick={addInternship}>
                                 +
                             </button>
                         )}
@@ -174,23 +146,34 @@ const Project = ({ index, isLast, addProject, removeProject }) => {
 
                 <div className="text-info">
                     <div className="input-row">
-                        <label className="label">Time:</label>
+                        <label className="label">Company Name:</label>
                         <input
                             type="text"
-                            value={projectInfo.time}
-                            onChange={(e) => handleInputChange('time', e.target.value)}
-                            placeholder="e.g. 2023"
+                            value={internshipInfo.companyName}
+                            onChange={(e) => handleInputChange('companyName', e.target.value)}
+                            placeholder="e.g. Google"
                             className="info-input"
                         />
                     </div>
 
                     <div className="input-row">
-                        <label className="label">Name:</label>
+                        <label className="label">Position:</label>
                         <input
                             type="text"
-                            value={projectInfo.name}
-                            onChange={(e) => handleInputChange('name', e.target.value)}
-                            placeholder="Project Name"
+                            value={internshipInfo.position}
+                            onChange={(e) => handleInputChange('position', e.target.value)}
+                            placeholder="e.g. Software Engineer Intern"
+                            className="info-input"
+                        />
+                    </div>
+
+                    <div className="input-row">
+                        <label className="label">Duration:</label>
+                        <input
+                            type="text"
+                            value={internshipInfo.duration}
+                            onChange={(e) => handleInputChange('duration', e.target.value)}
+                            placeholder="e.g. June 2023 - August 2023"
                             className="info-input"
                         />
                     </div>
@@ -199,26 +182,26 @@ const Project = ({ index, isLast, addProject, removeProject }) => {
                         <label className="label">Summary:</label>
                         <input
                             type="text"
-                            value={projectInfo.summary}
+                            value={internshipInfo.summary}
                             onChange={(e) => handleInputChange('summary', e.target.value)}
-                            placeholder="Brief Introduction"
+                            placeholder="Brief Summary"
                             className="info-input"
                         />
                     </div>
 
-                    {/* 可选项目详情（带编辑器） */}
+                    {/* 可选详情（带编辑器） */}
                     <div className="input-row">
                         <label className="label">Details Title:</label>
                         <input
                             type="text"
-                            value={projectInfo.detailTitle}
+                            value={internshipInfo.detailTitle}
                             onChange={(e) => handleInputChange('detailTitle', e.target.value)}
                             className="info-input"
                         />
                     </div>
                     <div>
                         <label id={`detailLabel-${index}`} style={{ fontWeight: 'bold' }}>
-                            {projectInfo.detailTitle}:
+                            {internshipInfo.detailTitle}:
                         </label>
                         <div
                             id={`detailEditor-${index}`}
@@ -226,15 +209,10 @@ const Project = ({ index, isLast, addProject, removeProject }) => {
                         ></div>
                     </div>
 
-                    {/* 可选视频/图片上传 */}
+                    {/* 上传媒体 */}
                     <div className="upload-row">
                         <label className="label">Media:</label>
-                        {/* 和 label 一致的 id */}
-                        <input
-                            id={`fileInput-${index}`}
-                            type="file"
-                            onChange={handleFileChange}
-                        />
+                        <input id={`fileInput-${index}`} type="file" onChange={handleFileChange} />
                         <div className="upload-actions">
                             <button
                                 className="file-upload-button"
@@ -248,34 +226,32 @@ const Project = ({ index, isLast, addProject, removeProject }) => {
                         </div>
                     </div>
 
-                    {projectInfo.mediaPreview && (
+                    {internshipInfo.mediaPreview && (
                         <div className="upload-preview">
                             <label className="upload-success-label">Upload Success</label>
                             <textarea
                                 className="media-description"
                                 placeholder="Media Description"
-                                value={projectInfo.mediaDescription}
-                                onChange={(e) =>
-                                    handleInputChange('mediaDescription', e.target.value)
-                                }
+                                value={internshipInfo.mediaDescription}
+                                onChange={(e) => handleInputChange('mediaDescription', e.target.value)}
                                 style={{ height: '80px', resize: 'none' }}
                             />
                         </div>
                     )}
 
-                    {/* 可选其他（通过 editor） */}
+                    {/* 可选其他信息 */}
                     <div className="input-row">
-                        <label className="label">Other Title:</label>
+                        <label className="label">Additional Info:</label>
                         <input
                             type="text"
-                            value={projectInfo.otherTitle}
+                            value={internshipInfo.otherTitle}
                             onChange={(e) => handleInputChange('otherTitle', e.target.value)}
                             className="info-input"
                         />
                     </div>
                     <div>
                         <label id={`otherLabel-${index}`} style={{ fontWeight: 'bold' }}>
-                            {projectInfo.otherTitle}:
+                            {internshipInfo.otherTitle}:
                         </label>
                         <div
                             id={`otherEditor-${index}`}
@@ -288,4 +264,4 @@ const Project = ({ index, isLast, addProject, removeProject }) => {
     );
 };
 
-export default Project;
+export default Internship;
