@@ -1,24 +1,55 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Slider from '../common/Slider';
-import Education from './Education'; // 刚才的子组件
+import Education from './Education';
 import axios from 'axios';
 
-function EducationSliderWapper() {
+function EducationSliderWapper({ username, version }) {
     const [educationList, setEducationList] = useState([{ id: 0 }]);
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    // 整体数据: { education1: {...}, education2: {...} }
+    // 结构: { education1: {...}, education2: {...} }
     const [educationData, setEducationData] = useState({});
 
     // 定时器，10 秒自动保存
     const saveTimeoutRef = useRef(null);
 
-    // 监听 educationData 变化，10秒后自动保存
+    // --------------------------
+    // 1. 加载时, fetch 已有数据
+    // --------------------------
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const res = await axios.get(`/api/education-info?username=${username}&version=${version}`);
+                if (res.data && res.data.education) {
+                    const eduObj = res.data.education;
+                    const keys = Object.keys(eduObj);
+
+                    const newList = keys.map((key, idx) => ({
+                        id: idx,
+                    }));
+                    setEducationList(newList);
+                    setEducationData(eduObj);
+                } else {
+                    setEducationList([{ id: 0 }]);
+                    setEducationData({});
+                }
+            } catch (error) {
+                console.error('Error fetching education data:', error);
+            }
+        }
+
+        if (username && version) {
+            fetchData();
+        }
+    }, [username, version]);
+
+    // --------------------------
+    // 2. 监听 educationData, 10秒后自动保存
+    // --------------------------
     useEffect(() => {
         if (saveTimeoutRef.current) {
             clearTimeout(saveTimeoutRef.current);
         }
-
         saveTimeoutRef.current = setTimeout(() => {
             saveAllEducationData();
         }, 10000);
@@ -26,11 +57,18 @@ function EducationSliderWapper() {
         return () => clearTimeout(saveTimeoutRef.current);
     }, [educationData]);
 
-    // 父组件一次性 POST 到后端
+    // --------------------------
+    // 3. 统一保存函数
+    // --------------------------
     const saveAllEducationData = async () => {
         try {
-            // 后端期望的结构: { education: { education1: {...}, education2: {...} } }
-            const payload = { education: educationData };
+            // payload: { username, version, education: { education1: {...}, ...} }
+            const payload = {
+                username,
+                version,
+                education: educationData,
+            };
+            // POST /api/education-info
             const response = await axios.post('/api/education-info', payload);
             console.log('All educations saved:', response.data);
         } catch (error) {
@@ -38,7 +76,9 @@ function EducationSliderWapper() {
         }
     };
 
-    // 子组件传回：key = "education1" / "education2" ... , value = {...}
+    // --------------------------
+    // 4. 子组件 -> 父组件
+    // --------------------------
     const handleChildChange = (educationKey, cardData) => {
         setEducationData((prev) => ({
             ...prev,
@@ -46,7 +86,7 @@ function EducationSliderWapper() {
         }));
     };
 
-    // 新增一条 Education
+    // 新增
     const addEducation = () => {
         setEducationList((prev) => {
             const newItem = { id: prev.length };
@@ -55,17 +95,18 @@ function EducationSliderWapper() {
         setCurrentIndex(educationList.length);
     };
 
-    // 删除一条 Education
+    // 删除
     const removeEducation = (removeIndex) => {
         setEducationList((prev) => {
-            if (prev.length === 1) return prev; // 至少一项
-            const updated = [...prev];
-            updated.splice(removeIndex, 1);
+            if (prev.length === 1) return prev; // 保留至少1条
+            const updated = prev.filter((_, i) => i !== removeIndex);
+            setCurrentIndex((prevIndex) =>
+                prevIndex >= removeIndex ? Math.max(0, prevIndex - 1) : prevIndex
+            );
             return updated;
         });
-        setCurrentIndex((prev) => Math.max(0, prev - 1));
 
-        // 同时从 educationData 中删除对应 key
+        // 同步删除 data
         setEducationData((prev) => {
             const newData = { ...prev };
             const keyToDelete = `education${removeIndex + 1}`;
@@ -74,6 +115,9 @@ function EducationSliderWapper() {
         });
     };
 
+    // --------------------------
+    // 渲染
+    // --------------------------
     return (
         <Slider
             currentIndex={currentIndex}
@@ -82,11 +126,12 @@ function EducationSliderWapper() {
             renderItem={(item, index, addItem, removeItem) => (
                 <Education
                     key={item.id}
-                    index={index} // 让 child 里以 index+1 显示
+                    index={index}
                     isLast={index === educationList.length - 1}
                     addEducation={addItem}
                     removeEducation={() => removeItem(index)}
-                    onChange={handleChildChange} // 核心: 接收每个子组件的数据
+                    onChange={handleChildChange}
+                    initialData={educationData[`education${index + 1}`]} // 将数据传递给子组件
                 />
             )}
             addItem={addEducation}

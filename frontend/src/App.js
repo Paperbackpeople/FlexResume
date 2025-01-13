@@ -68,7 +68,7 @@ function App() {
                         <PersonalInfo/>
                     </div>
                     <div className={`section ${activeSection === 'Education' ? 'is-visible' : 'is-hidden'}`}>
-                        <EducationSliderWapper/>
+                        <EducationSliderWapper username={username} version={version}/>
                     </div>
                     <div className={`section ${activeSection === 'Project' ? 'is-visible' : 'is-hidden'}`}>
                         <ProjectSliderWrapper/>

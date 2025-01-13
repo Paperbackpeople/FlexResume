@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import './Education.css';
 
-const Education = ({ index, isLast, addEducation, removeEducation, onChange }) => {
-    const [educationInfo, setEducationInfo] = useState({
+const Education = ({ index, isLast, addEducation, removeEducation, onChange, initialData }) => {
+    const [educationInfo, setEducationInfo] = useState(
+        initialData || {
         school: '',
         degree: '',
         location: '',
@@ -14,17 +15,23 @@ const Education = ({ index, isLast, addEducation, removeEducation, onChange }) =
         courses: [{ name: '' }],
         awards: [{ time: '', name: '' }],
         logo: '',
-    });
+    }
+    );
+
+    useEffect(() => {
+        if (initialData) {
+            setEducationInfo(initialData);
+        }
+    }, [initialData]);
 
     const fileInputRef = useRef(null);
-
     // ---------------------------
     // 每次状态变动，都回调给父组件
     // ---------------------------
     const updateParent = (newState) => {
         setEducationInfo(newState);
-        // 构建形如 { education1: {...} } 的对象，传给父组件
-        onChange(`education${index + 1}`, newState);
+        // 构建形如 { education1: {...} } 的方式传递
+        if (onChange) onChange(`education${index + 1}`, newState);
     };
 
     // 更新基础信息
@@ -33,7 +40,7 @@ const Education = ({ index, isLast, addEducation, removeEducation, onChange }) =
         updateParent(newState);
     };
 
-    // 课程信息
+    // 课程
     const handleCourseChange = (cIndex, key, value) => {
         const updatedCourses = [...educationInfo.courses];
         updatedCourses[cIndex][key] = value;
@@ -51,7 +58,7 @@ const Education = ({ index, isLast, addEducation, removeEducation, onChange }) =
         updateParent({ ...educationInfo, courses: updatedCourses });
     };
 
-    // 奖项信息
+    // 奖项
     const handleAwardChange = (aIndex, key, value) => {
         const updatedAwards = [...educationInfo.awards];
         updatedAwards[aIndex][key] = value;
@@ -83,161 +90,168 @@ const Education = ({ index, isLast, addEducation, removeEducation, onChange }) =
     };
 
     return (
-        <div className='education-container'>
-            <div className='education-section'>
-                <div className='section-header'>
-                    <h2 className='left-align'>Education {index + 1}</h2>
-                    <div className='button-group'>
-                        <button className='remove-newButton' onClick={removeEducation}>
+        <div className="education-container">
+            <div className="education-section">
+                <div className="section-header">
+                    <h2 className="left-align">Education {index + 1}</h2>
+                    <div className="button-group">
+                        <button className="remove-newButton" onClick={removeEducation}>
                             -
                         </button>
                         {isLast && (
-                            <button className='add-newButton' onClick={addEducation}>
+                            <button className="add-newButton" onClick={addEducation}>
                                 +
                             </button>
                         )}
                     </div>
                 </div>
 
-                <div className='info-container'>
-                    <div className='text-info'>
-                        <div className='text-photo-container'>
-                            <div className='text-container'>
-                                <div className='input-row'>
+                <div className="info-container">
+                    <div className="text-info">
+                        <div className="text-photo-container">
+                            <div className="text-container">
+                                <div className="input-row">
                                     <input
-                                        type='text'
+                                        type="text"
                                         value={educationInfo.school}
-                                        placeholder='School Name'
+                                        placeholder="School Name"
                                         onChange={(e) => handleInputChange('school', e.target.value)}
-                                        className='info-input'
+                                        className="info-input"
                                     />
                                     <input
-                                        type='text'
+                                        type="text"
                                         value={educationInfo.location}
-                                        placeholder='Location'
+                                        placeholder="Location"
                                         onChange={(e) => handleInputChange('location', e.target.value)}
-                                        className='info-input'
+                                        className="info-input"
                                     />
                                 </div>
 
-                                <div className='input-row'>
+                                <div className="input-row">
                                     <input
-                                        type='text'
+                                        type="text"
                                         value={educationInfo.degree}
-                                        placeholder='Degree'
+                                        placeholder="Degree"
                                         onChange={(e) => handleInputChange('degree', e.target.value)}
-                                        className='info-input'
+                                        className="info-input"
                                     />
                                     <input
-                                        type='text'
+                                        type="text"
                                         value={educationInfo.fieldOfStudy}
-                                        placeholder='Field of Study'
+                                        placeholder="Field of Study"
                                         onChange={(e) => handleInputChange('fieldOfStudy', e.target.value)}
-                                        className='info-input'
+                                        className="info-input"
                                     />
                                 </div>
 
-                                <div className='input-row'>
+                                <div className="input-row">
                                     <input
-                                        type='date'
+                                        type="date"
                                         value={educationInfo.startDate}
-                                        placeholder='Start Date'
+                                        placeholder="Start Date"
                                         onChange={(e) => handleInputChange('startDate', e.target.value)}
-                                        className='info-input'
+                                        className="info-input"
                                     />
                                     -
                                     <input
-                                        type='date'
+                                        type="date"
                                         value={educationInfo.graduationYear}
-                                        placeholder='Graduation Year'
+                                        placeholder="Graduation Year"
                                         onChange={(e) => handleInputChange('graduationYear', e.target.value)}
-                                        className='info-input'
+                                        className="info-input"
                                     />
                                 </div>
 
-                                <div className='input-row'>
+                                <div className="input-row">
                                     <input
-                                        type='text'
+                                        type="text"
                                         value={educationInfo.honours}
-                                        placeholder='Honours'
+                                        placeholder="Honours"
                                         onChange={(e) => handleInputChange('honours', e.target.value)}
-                                        className='info-input'
+                                        className="info-input"
                                     />
                                     <input
-                                        type='text'
+                                        type="text"
                                         value={educationInfo.gpa}
-                                        placeholder='GPA'
+                                        placeholder="GPA"
                                         onChange={(e) => handleInputChange('gpa', e.target.value)}
-                                        className='info-input'
+                                        className="info-input"
                                     />
                                 </div>
                             </div>
 
                             {/* 右侧校徽 */}
-                            <div className='logo-container'>
+                            <div className="logo-container">
                                 <div
-                                    className='school-logo'
+                                    className="school-logo"
                                     onClick={openFilePicker}
                                     style={{ cursor: 'pointer' }}
                                 >
                                     {educationInfo.logo ? (
-                                        <img src={educationInfo.logo} alt='Uploaded' className='logo-preview' />
+                                        <img
+                                            src={educationInfo.logo}
+                                            alt="Uploaded"
+                                            className="logo-preview"
+                                        />
                                     ) : (
-                                        <div className='logo-placeholder'>Click to Upload</div>
+                                        <div className="logo-placeholder">Click to Upload</div>
                                     )}
                                 </div>
                                 <input
-                                    type='file'
-                                    accept='image/*'
+                                    type="file"
+                                    accept="image/*"
                                     ref={fileInputRef}
                                     onChange={(e) => handleLogoUpload(e.target.files[0])}
-                                    className='logo-upload'
+                                    className="logo-upload"
                                 />
                             </div>
                         </div>
 
                         {/* 动态添加课程 */}
-                        <h3 className='left-align'>Courses</h3>
+                        <h3 className="left-align">Courses</h3>
                         {educationInfo.courses.map((item, cIndex) => (
-                            <div key={cIndex} className='course-award-row'>
+                            <div key={cIndex} className="course-award-row">
                                 <input
-                                    type='text'
+                                    type="text"
                                     value={item.name}
-                                    placeholder='Course Name'
+                                    placeholder="Course Name"
                                     onChange={(e) => handleCourseChange(cIndex, 'name', e.target.value)}
-                                    className='info-input'
+                                    className="info-input"
                                 />
-                                <button onClick={addCourse} className='add-button'>
+                                <button onClick={addCourse} className="add-button">
                                     +
                                 </button>
-                                <button onClick={() => removeCourse(cIndex)} className='remove-button'>
+                                <button onClick={() => removeCourse(cIndex)} className="remove-button">
                                     -
                                 </button>
                             </div>
                         ))}
 
                         {/* 动态添加奖项 */}
-                        <h3 className='left-align'>Awards</h3>
+                        <h3 className="left-align">Awards</h3>
                         {educationInfo.awards.map((aw, aIndex) => (
-                            <div key={aIndex} className='course-award-row'>
+                            <div key={aIndex} className="course-award-row">
                                 <input
-                                    type='text'
+                                    type="text"
                                     value={aw.time}
-                                    placeholder='Time (e.g., 2022)'
+                                    placeholder="Time (e.g., 2022)"
                                     onChange={(e) => handleAwardChange(aIndex, 'time', e.target.value)}
-                                    className='info-input'
+                                    className="info-input"
                                 />
                                 <input
-                                    type='text'
+                                    type="text"
                                     value={aw.name}
-                                    placeholder='Award Name'
+                                    placeholder="Award Name"
                                     onChange={(e) => handleAwardChange(aIndex, 'name', e.target.value)}
-                                    className='info-input'
+                                    className="info-input"
                                 />
-                                <button onClick={addAward} className='add-button'>
+                                <button onClick={addAward} className="add-button">
                                     +
                                 </button>
-                                <button onClick={() => removeAward(aIndex)} className='remove-button'>
+                                <button
+                                    onClick={() => removeAward(aIndex)}
+                                    className="remove-button"
+                                >
                                     -
                                 </button>
                             </div>
