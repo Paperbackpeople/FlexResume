@@ -1,16 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './Project.css';
-import axios from 'axios';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 
-const Project = ({ 
-  index, 
-  isLast, 
-  addProject, 
-  removeProject,
-  onChange,       // 新增: 父组件回调
-}) => {
+function Project({
+                   itemId,
+                   index,
+                   isLast,
+                   addProject,
+                   removeProject,
+                   onChange,
+                   initialData,
+                 }) {
   const [projectInfo, setProjectInfo] = useState({
     time: '',
     name: '',
@@ -25,16 +26,22 @@ const Project = ({
     otherContent: '',
   });
 
-  // Quill 实例的 ref
+  // 只在组件初次挂载或初次拿到 initialData 时做一次回填
+  const firstLoadRef = useRef(true);
+
+  // Quill ref
   const detailQuillRef = useRef(null);
   const otherQuillRef = useRef(null);
 
-  // -------------------------
-  // 1. 初始化 Quill
-  // -------------------------
+  // DOM id，避免 index 乱序导致的重复渲染问题
+  const detailEditorId = `detailEditor-${itemId}`;
+  const otherEditorId = `otherEditor-${itemId}`;
+
+  // 初始化 Quill
   useEffect(() => {
-    if (!detailQuillRef.current) {
-      detailQuillRef.current = new Quill(`#detailEditor-${index}`, {
+    // detail
+    if (!detailQuillRef.current && document.getElementById(detailEditorId)) {
+      detailQuillRef.current = new Quill(`#${detailEditorId}`, {
         theme: 'snow',
         modules: {
           toolbar: [
@@ -46,13 +53,14 @@ const Project = ({
         },
       });
       detailQuillRef.current.on('text-change', () => {
-        const content = detailQuillRef.current.root.innerHTML;
-        updateProjectInfo('detailContent', content);
+        const html = detailQuillRef.current.root.innerHTML;
+        handleQuillChange('detailContent', html);
       });
     }
 
-    if (!otherQuillRef.current) {
-      otherQuillRef.current = new Quill(`#otherEditor-${index}`, {
+    // other
+    if (!otherQuillRef.current && document.getElementById(otherEditorId)) {
+      otherQuillRef.current = new Quill(`#${otherEditorId}`, {
         theme: 'snow',
         modules: {
           toolbar: [
@@ -64,51 +72,66 @@ const Project = ({
         },
       });
       otherQuillRef.current.on('text-change', () => {
-        const content = otherQuillRef.current.root.innerHTML;
-        updateProjectInfo('otherContent', content);
+        const html = otherQuillRef.current.root.innerHTML;
+        handleQuillChange('otherContent', html);
       });
     }
-  }, [index]);
+  }, [detailEditorId, otherEditorId]);
 
-  // -------------------------
-  // 2. 每次 projectInfo 改变，都通知父组件
-  // -------------------------
+  // 初次挂载时，回填数据 (only once)
   useEffect(() => {
-    // 让父组件拿到 { ...projectInfo }
-    if (onChange) {
-      onChange(`project${index}`, projectInfo);
-    }
-  }, [projectInfo, index, onChange]);
+    if (firstLoadRef.current && initialData) {
+      setProjectInfo((prev) => ({
+        ...prev,
+        ...initialData,
+      }));
 
-  // 更新 projectInfo，并 setState
-  const updateProjectInfo = (key, value) => {
-    setProjectInfo((prev) => ({ ...prev, [key]: value }));
+      // 回填 Quill
+      if (detailQuillRef.current && initialData.detailContent) {
+        detailQuillRef.current.root.innerHTML = initialData.detailContent;
+      }
+      if (otherQuillRef.current && initialData.otherContent) {
+        otherQuillRef.current.root.innerHTML = initialData.otherContent;
+      }
+
+      firstLoadRef.current = false; // 标记已加载
+    }
+  }, [initialData]);
+
+  // Quill 专用：更新某个字段
+  const handleQuillChange = (key, htmlValue) => {
+    const updated = { ...projectInfo, [key]: htmlValue };
+    setProjectInfo(updated);
+    // 立刻通知父组件
+    onChange && onChange(itemId, updated);
   };
 
-  // -------------------------
-  // 3. 基础信息输入
-  // -------------------------
-  const handleInputChange = (key, value) => {
-    updateProjectInfo(key, value);
+  // 普通字段更新
+  const updateProjectField = (key, value) => {
+    const updated = { ...projectInfo, [key]: value };
+    setProjectInfo(updated);
+    onChange && onChange(itemId, updated);
+  };
 
-    // 额外：如果是 detailTitle / otherTitle，更新 DOM label
+  // input onChange
+  const handleInputChange = (key, value) => {
+    updateProjectField(key, value);
+
+    // 同步 label
     if (key === 'detailTitle') {
-      const el = document.querySelector(`#detailLabel-${index}`);
+      const el = document.getElementById(`detailLabel-${itemId}`);
       if (el) el.textContent = value;
     }
     if (key === 'otherTitle') {
-      const el = document.querySelector(`#otherLabel-${index}`);
+      const el = document.getElementById(`otherLabel-${itemId}`);
       if (el) el.textContent = value;
     }
   };
 
-  // -------------------------
-  // 4. 文件处理
-  // -------------------------
+  // 文件
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     let fileType = '';
     if (file.type.includes('image')) {
       fileType = 'image';
@@ -118,158 +141,156 @@ const Project = ({
       alert('仅支持图片或视频文件');
       return;
     }
-
     const reader = new FileReader();
     reader.onload = () => {
-      updateProjectInfo('mediaType', fileType);
-      updateProjectInfo('mediaFile', file);
-      updateProjectInfo('mediaPreview', reader.result);
+      updateProjectField('mediaType', fileType);
+      updateProjectField('mediaFile', file);
+      updateProjectField('mediaPreview', reader.result);
     };
     reader.readAsDataURL(file);
   };
 
+  // 移除媒体
   const removeMedia = () => {
-    updateProjectInfo('mediaType', '');
-    updateProjectInfo('mediaFile', null);
-    updateProjectInfo('mediaPreview', null);
-    updateProjectInfo('mediaDescription', '');
+    updateProjectField('mediaType', '');
+    updateProjectField('mediaFile', null);
+    updateProjectField('mediaPreview', null);
+    updateProjectField('mediaDescription', '');
   };
 
   return (
-    <div className="project-container">
-      <div className="project-section">
-        <div className="section-header">
-          <h2>Project {index + 1}</h2>
-          <div className="button-group">
-            <button className="remove-newButton" onClick={removeProject}>
-              -
-            </button>
-            {isLast && (
-              <button className="add-newButton" onClick={addProject}>
-                +
+      <div className="project-container">
+        <div className="project-section">
+          <div className="section-header">
+            <h2>Project {index + 1}</h2>
+            <div className="button-group">
+              <button className="remove-newButton" onClick={removeProject}>
+                -
               </button>
-            )}
-          </div>
-        </div>
-
-        <div className="text-info">
-          <div className="input-row">
-            <label className="label">Time:</label>
-            <input
-              type="text"
-              value={projectInfo.time}
-              onChange={(e) => handleInputChange('time', e.target.value)}
-              placeholder="e.g. 2023"
-              className="info-input"
-            />
-          </div>
-
-          <div className="input-row">
-            <label className="label">Name:</label>
-            <input
-              type="text"
-              value={projectInfo.name}
-              onChange={(e) => handleInputChange('name', e.target.value)}
-              placeholder="Project Name"
-              className="info-input"
-            />
-          </div>
-
-          <div className="input-row">
-            <label className="label">Summary:</label>
-            <input
-              type="text"
-              value={projectInfo.summary}
-              onChange={(e) => handleInputChange('summary', e.target.value)}
-              placeholder="Brief Introduction"
-              className="info-input"
-            />
-          </div>
-
-          {/* 详情标题 & 内容（Quill） */}
-          <div className="input-row">
-            <label className="label">Details Title:</label>
-            <input
-              type="text"
-              value={projectInfo.detailTitle}
-              onChange={(e) => handleInputChange('detailTitle', e.target.value)}
-              className="info-input"
-            />
-          </div>
-          <div>
-            <label
-              id={`detailLabel-${index}`}
-              style={{ fontWeight: 'bold' }}
-            >
-              {projectInfo.detailTitle}:
-            </label>
-            <div
-              id={`detailEditor-${index}`}
-              style={{ height: '150px', marginBottom: '20px' }}
-            ></div>
-          </div>
-
-          {/* 媒体上传 */}
-          <div className="upload-row">
-            <label className="label">Media:</label>
-            <input
-              id={`fileInput-${index}`}
-              type="file"
-              onChange={handleFileChange}
-              style={{ display: 'none' }}
-            />
-            <div className="upload-actions">
-              <button
-                className="file-upload-button"
-                onClick={() => document.getElementById(`fileInput-${index}`).click()}
-              >
-                Choose File
-              </button>
-              <button onClick={removeMedia} className="remove-media-button">
-                Remove Media
-              </button>
+              {isLast && (
+                  <button className="add-newButton" onClick={addProject}>
+                    +
+                  </button>
+              )}
             </div>
           </div>
 
-          {projectInfo.mediaPreview && (
-            <div className="upload-preview">
-              <label className="upload-success-label">Upload Success</label>
-              <textarea
-                className="media-description"
-                placeholder="Media Description"
-                value={projectInfo.mediaDescription}
-                onChange={(e) => handleInputChange('mediaDescription', e.target.value)}
-                style={{ height: '80px', resize: 'none' }}
+          <div className="text-info">
+            {/* Time */}
+            <div className="input-row">
+              <label className="label">Time:</label>
+              <input
+                  type="text"
+                  value={projectInfo.time || ''}
+                  onChange={(e) => handleInputChange('time', e.target.value)}
+                  placeholder="e.g. 2023"
+                  className="info-input"
               />
             </div>
-          )}
+            {/* Name */}
+            <div className="input-row">
+              <label className="label">Name:</label>
+              <input
+                  type="text"
+                  value={projectInfo.name || ''}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  placeholder="Project Name"
+                  className="info-input"
+              />
+            </div>
+            {/* Summary */}
+            <div className="input-row">
+              <label className="label">Summary:</label>
+              <input
+                  type="text"
+                  value={projectInfo.summary || ''}
+                  onChange={(e) => handleInputChange('summary', e.target.value)}
+                  placeholder="Brief Introduction"
+                  className="info-input"
+              />
+            </div>
 
-          {/* Other Title & 内容（Quill） */}
-          <div className="input-row">
-            <label className="label">Other Title:</label>
-            <input
-              type="text"
-              value={projectInfo.otherTitle}
-              onChange={(e) => handleInputChange('otherTitle', e.target.value)}
-              className="info-input"
-            />
-          </div>
-          <div>
-            <label
-              id={`otherLabel-${index}`}
-              style={{ fontWeight: 'bold' }}
-            >
-              {projectInfo.otherTitle}:
-            </label>
-            <div
-              id={`otherEditor-${index}`}
-              style={{ height: '150px', marginBottom: '20px' }}
-            ></div>
+            {/* detailTitle + detailContent */}
+            <div className="input-row">
+              <label className="label">Details Title:</label>
+              <input
+                  type="text"
+                  value={projectInfo.detailTitle || ''}
+                  onChange={(e) => handleInputChange('detailTitle', e.target.value)}
+                  className="info-input"
+              />
+            </div>
+            <div>
+              <label id={`detailLabel-${itemId}`} style={{ fontWeight: 'bold' }}>
+                {projectInfo.detailTitle}
+              </label>
+              <div
+                  id={detailEditorId}
+                  style={{ height: '150px', marginBottom: '20px' }}
+              />
+            </div>
+
+            {/* Media */}
+            <div className="upload-row">
+              <label className="label">Media:</label>
+              <input
+                  id={`fileInput-${itemId}`}
+                  type="file"
+                  onChange={handleFileChange}
+                  style={{ display: 'none' }}
+              />
+              <div className="upload-actions">
+                <button
+                    className="file-upload-button"
+                    onClick={() =>
+                        document.getElementById(`fileInput-${itemId}`).click()
+                    }
+                >
+                  Choose File
+                </button>
+                <button onClick={removeMedia} className="remove-media-button">
+                  Remove Media
+                </button>
+              </div>
+            </div>
+            {projectInfo.mediaPreview && (
+                <div className="upload-preview">
+                  <label className="upload-success-label">Upload Success</label>
+                  <textarea
+                      className="media-description"
+                      placeholder="Media Description"
+                      value={projectInfo.mediaDescription || ''}
+                      onChange={(e) =>
+                          handleInputChange('mediaDescription', e.target.value)
+                      }
+                      style={{ height: '80px', resize: 'none' }}
+                  />
+                </div>
+            )}
+
+            {/* otherTitle + otherContent */}
+            <div className="input-row">
+              <label className="label">Other Title:</label>
+              <input
+                  type="text"
+                  value={projectInfo.otherTitle || ''}
+                  onChange={(e) => handleInputChange('otherTitle', e.target.value)}
+                  className="info-input"
+              />
+            </div>
+            <div>
+              <label id={`otherLabel-${itemId}`} style={{ fontWeight: 'bold' }}>
+                {projectInfo.otherTitle}
+              </label>
+              <div
+                  id={otherEditorId}
+                  style={{ height: '150px', marginBottom: '20px' }}
+              />
+            </div>
           </div>
         </div>
       </div>
-    </div>
   );
-};
+}
 
 export default Project;

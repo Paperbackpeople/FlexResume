@@ -5,7 +5,7 @@ import com.example.flexresume.repository.EducationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/education-info")
@@ -14,24 +14,29 @@ public class EducationController {
     @Autowired
     private EducationRepository educationRepository;
 
-    // 这里我们假设一次POST带上 { education: { education1: {...}, education2: {...} } }
-    // 并存成一个新的 EducationDocument
+    // 保存教育信息
     @PostMapping
     public EducationDocument saveEducation(@RequestBody EducationDocument doc) {
-        // 如果不想每次都新建，也可以做更新逻辑
-        // 这里直接 save，会插入新的文档
-        return educationRepository.save(doc);
+        // 检查是否已经存在相同的 username 和 version
+        Optional<EducationDocument> existingDoc = educationRepository
+                .findByUsernameAndVersion(doc.getUsername(), doc.getVersion());
+
+        if (existingDoc.isPresent()) {
+            // 更新已有记录
+            EducationDocument existing = existingDoc.get();
+            existing.setEducation(doc.getEducation());
+            return educationRepository.save(existing);
+        } else {
+            // 插入新记录
+            return educationRepository.save(doc);
+        }
     }
 
-    // 获取所有
+    // 根据 username 和 version 查询教育信息
     @GetMapping
-    public List<EducationDocument> getAllEducations() {
-        return educationRepository.findAll();
-    }
-
-    // 根据ID获取
-    @GetMapping("/{id}")
-    public EducationDocument getOne(@PathVariable String id) {
-        return educationRepository.findById(id).orElse(null);
+    public EducationDocument getEducationByUserAndVersion(
+            @RequestParam("username") String username,
+            @RequestParam("version") int version) {
+        return educationRepository.findByUsernameAndVersion(username, version).orElse(null);
     }
 }

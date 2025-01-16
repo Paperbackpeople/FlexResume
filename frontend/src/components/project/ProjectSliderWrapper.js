@@ -4,46 +4,50 @@ import Project from './Project';
 import axios from 'axios';
 
 function ProjectSliderWrapper({ username, version }) {
-  const [projectList, setProjectList] = useState([{ id: 0 }]);
+  // projectList 用来控制 Slider 里的卡片渲染。这里用 { id: 'project0' } 这种形式
+  const [projectList, setProjectList] = useState([{ id: 'project0' }]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [allProjectData, setAllProjectData] = useState({}); 
-  // or use an array if you prefer. Example: { project0: {...}, project1: {...}, ...}
 
+  // 父组件保存所有卡片数据: { "project0": {...}, "project1": {...}, ... }
+  const [allProjectData, setAllProjectData] = useState({});
+
+  // 定时器 ref，用来控制 10 秒后自动保存
   const saveTimeoutRef = useRef(null);
 
-  // --------------------
-  // 1. 初始化: fetch 已有数据
-  // --------------------
+  // 1. 加载后端已有项目
   useEffect(() => {
     async function fetchProjectData() {
+      if (!username || !version) return;
       try {
-        const res = await axios.get('/api/project-info'); 
-        // 假设后端返回一个对象数组: 
-        // e.g. [{ id: 0, time: '', name: '', ...}, { id: 1, time:'', name:'', ...}, ...]
-        // 也可能返回别的结构，请自行调整
-        const data = res.data;
+        const res = await axios.get('/api/project-info', {
+          params: { username, version },
+        });
+        console.log('Fetched project data:', res.data);
 
-        // 假设我们存成跟 projectList 相似的结构:
-        // data: [ { id:0, time:'2022', name:'xx', ... }, {...} ]
-        if (data && data.length > 0) {
-          setProjectList(data.map((item, idx) => ({ ...item, id: idx })));
-          // 也可以将 data 映射到 allProjectData
-          const tempObj = {};
-          data.forEach((item, idx) => {
-            tempObj[`project${idx}`] = item; 
-          });
-          setAllProjectData(tempObj);
+        if (res.data && res.data.projectData) {
+          // e.g. { projectData: { project0: {...}, project1: {...} }}
+          const projectData = res.data.projectData;
+
+          // 取出所有 key 并排序，保证顺序 "project0", "project1", ...
+          const keys = Object.keys(projectData).sort();
+          // 生成对应的卡片列表
+          const newList = keys.map((key) => ({ id: key }));
+
+          setProjectList(newList);
+          setAllProjectData(projectData);
+        } else {
+          // 若没数据则创建一个空卡片
+          setProjectList([{ id: 'project0' }]);
+          setAllProjectData({});
         }
       } catch (err) {
         console.error('fetch project error:', err);
       }
     }
     fetchProjectData();
-  }, []);
+  }, [username, version]);
 
-  // --------------------
-  // 2. 监听 allProjectData 变化，10 秒后保存到后端
-  // --------------------
+  // 2. 当 allProjectData 改变后，10秒后自动保存
   useEffect(() => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -55,29 +59,49 @@ function ProjectSliderWrapper({ username, version }) {
     return () => clearTimeout(saveTimeoutRef.current);
   }, [allProjectData]);
 
-  // 统一保存函数
+  // 判断卡片是否为空（至少有一个字段非空即认为有效）
+  const isValidProjectData = (dataObj) => {
+    return Object.values(dataObj).some((val) => {
+      if (val == null) return false;
+      if (typeof val === 'string' && val.trim() === '') return false;
+      return true;
+    });
+  };
+
+  // 3. 保存函数
   const saveAllProjects = async () => {
     try {
-      // demo: { username, version } 也发送给后端
-      // 结构可根据你的后端接口需求而定
+      // 过滤掉完全空的卡片
+      const filteredData = {};
+      Object.entries(allProjectData).forEach(([key, value]) => {
+        if (isValidProjectData(value)) {
+          filteredData[key] = value;
+        }
+      });
+
+      if (Object.keys(filteredData).length === 0) {
+        console.log('项目数据全部为空, 不执行保存');
+        return;
+      }
+
       const payload = {
         username,
         version,
-        projectData: allProjectData,
+        projectData: filteredData,
       };
-      const res = await axios.post('/api/project-all', payload);
-      console.log('所有项目保存成功: ', res.data);
+      const res = await axios.post('/api/project-info', payload);
+      console.log('自动保存成功:', res.data);
     } catch (error) {
-      console.error('save all projects error:', error);
+      console.error('自动保存失败:', error);
     }
   };
 
-  // --------------------
-  // 3. 新增/删除 project
-  // --------------------
+  // 4. 新增/删除项目
   const addProject = () => {
     setProjectList((prev) => {
-      const newList = [...prev, { id: prev.length }];
+      // 新卡片 id: "project" + 下标
+      const newId = `project${prev.length}`;
+      const newList = [...prev, { id: newId }];
       setCurrentIndex(newList.length - 1);
       return newList;
     });
@@ -85,25 +109,26 @@ function ProjectSliderWrapper({ username, version }) {
 
   const removeProject = (removeIndex) => {
     setProjectList((prev) => {
-      if (prev.length === 1) return prev;
+      if (prev.length === 1) return prev; // 保证至少1卡
       const newList = prev.filter((_, idx) => idx !== removeIndex);
 
+      // 调整 currentIndex
       setCurrentIndex((prevIndex) =>
-        prevIndex >= removeIndex ? Math.max(0, prevIndex - 1) : prevIndex
+          prevIndex >= removeIndex ? Math.max(0, prevIndex - 1) : prevIndex
       );
       return newList;
     });
-    // 同时从 allProjectData 删除
+
+    // 同时删除 allProjectData 的对应字段
     setAllProjectData((prev) => {
       const copy = { ...prev };
-      delete copy[`project${removeIndex}`];
+      const keyToDelete = `project${removeIndex}`;
+      delete copy[keyToDelete];
       return copy;
     });
   };
 
-  // --------------------
-  // 4. 子组件更新(单卡) -> 父组件合并到 allProjectData
-  // --------------------
+  // 子组件更新 -> 父组件
   const handleSingleProjectChange = (projKey, newProjData) => {
     setAllProjectData((prev) => ({
       ...prev,
@@ -112,24 +137,26 @@ function ProjectSliderWrapper({ username, version }) {
   };
 
   return (
-    <Slider
-      currentIndex={currentIndex}
-      setCurrentIndex={setCurrentIndex}
-      items={projectList}
-      renderItem={(item, idx, addItem, removeItem) => (
-        <Project
-          key={item.id}
-          index={idx}
-          isLast={idx === projectList.length - 1}
-          addProject={addItem}
-          removeProject={() => removeItem(idx)}
-          // 给子组件一个回调，用于把单卡数据传上来
-          onChange={handleSingleProjectChange}
-        />
-      )}
-      addItem={addProject}
-      removeItem={removeProject}
-    />
+      <Slider
+          currentIndex={currentIndex}
+          setCurrentIndex={setCurrentIndex}
+          items={projectList}
+          renderItem={(item, idx, addItem, removeItem) => (
+              <Project
+                  key={item.id}
+                  itemId={item.id} // 传入实际的id (e.g. "project0")
+                  index={idx}
+                  isLast={idx === projectList.length - 1}
+                  addProject={addItem}
+                  removeProject={() => removeItem(idx)}
+                  onChange={handleSingleProjectChange}
+                  // 传入已保存的数据
+                  initialData={allProjectData[item.id]}
+              />
+          )}
+          addItem={addProject}
+          removeItem={removeProject}
+      />
   );
 }
 

@@ -5,13 +5,17 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import java.util.Map;
 
-// 存放在 "education_info" 集合
 @Data
 @Document(collection = "education_info")
 public class EducationDocument {
+
     @Id
-    private String id; // MongoDB自动生成
-    // "education" 字段是一个 Map，key=education1/2... value=真正的数据
+    private String id; // MongoDB 自动生成
+
+    private String username; // 用于区分用户
+    private int version;     // 用于区分版本
+
+    // education: 形如 { "education1": { school: "...", ... }, "education2": {...} }
     private Map<String, EducationItem> education;
 
     @Data
@@ -24,7 +28,7 @@ public class EducationDocument {
         private String graduationYear;
         private String honours;
         private String gpa;
-        private String logo; // base64
+        private String logo;
         private java.util.List<Course> courses;
         private java.util.List<Award> awards;
     }

@@ -19,14 +19,11 @@ function EducationSliderWapper({ username, version }) {
     useEffect(() => {
         async function fetchData() {
             try {
-                const res = await axios.get(`/api/education-info?username=${username}&version=${version}`);
-                if (res.data && res.data.education) {
-                    const eduObj = res.data.education;
-                    const keys = Object.keys(eduObj);
-
-                    const newList = keys.map((key, idx) => ({
-                        id: idx,
-                    }));
+                const res = await axios.get('/api/education-info', { params: { username, version }});
+                const doc = res.data;  // doc 就是单个对象
+                if (doc && doc.education) {
+                    const eduObj = doc.education; // {education1: {...}, education2: {...}}
+                    const newList = Object.keys(eduObj).map((key, idx) => ({ id: idx }));
                     setEducationList(newList);
                     setEducationData(eduObj);
                 } else {
@@ -34,7 +31,7 @@ function EducationSliderWapper({ username, version }) {
                     setEducationData({});
                 }
             } catch (error) {
-                console.error('Error fetching education data:', error);
+                console.error("Error fetching education data:", error);
             }
         }
 
@@ -60,19 +57,44 @@ function EducationSliderWapper({ username, version }) {
     // --------------------------
     // 3. 统一保存函数
     // --------------------------
+    const isValidEducationData = (dataObj) => {
+        // 判断是否有有效数据：字段非空或数组字段非空
+        return Object.values(dataObj).some((fieldValue) => {
+            if (Array.isArray(fieldValue)) {
+                return fieldValue.some((item) =>
+                    Object.values(item).some((val) => val && val.trim())
+                );
+            }
+            return fieldValue && fieldValue.toString().trim();
+        });
+    };
+
     const saveAllEducationData = async () => {
         try {
-            // payload: { username, version, education: { education1: {...}, ...} }
+            // 过滤空数据
+            const filteredData = {};
+            Object.entries(educationData).forEach(([key, value]) => {
+                if (isValidEducationData(value)) {
+                    filteredData[key] = value;
+                }
+            });
+
+            if (Object.keys(filteredData).length === 0) {
+                console.log("没有有效数据，不进行保存。");
+                return;
+            }
+
             const payload = {
                 username,
                 version,
-                education: educationData,
+                education: filteredData,
             };
-            // POST /api/education-info
+
+            // 发送保存请求
             const response = await axios.post('/api/education-info', payload);
-            console.log('All educations saved:', response.data);
+            console.log('教育信息保存成功:', response.data);
         } catch (error) {
-            console.error('Error saving all education data:', error);
+            console.error('保存教育信息时出错:', error);
         }
     };
 
