@@ -26,8 +26,15 @@ function Project({
     otherContent: '',
   });
 
-  // 只在组件初次挂载或初次拿到 initialData 时做一次回填
-  const firstLoadRef = useRef(true);
+  // 使用 useEffect 处理 initialData 的更新
+  useEffect(() => {
+    if (initialData) {
+      setProjectInfo(prev => ({
+        ...prev,
+        ...initialData
+      }));
+    }
+  }, [initialData]);
 
   // Quill ref
   const detailQuillRef = useRef(null);
@@ -52,6 +59,7 @@ function Project({
           ],
         },
       });
+
       detailQuillRef.current.on('text-change', () => {
         const html = detailQuillRef.current.root.innerHTML;
         handleQuillChange('detailContent', html);
@@ -71,6 +79,7 @@ function Project({
           ],
         },
       });
+
       otherQuillRef.current.on('text-change', () => {
         const html = otherQuillRef.current.root.innerHTML;
         handleQuillChange('otherContent', html);
@@ -78,39 +87,48 @@ function Project({
     }
   }, [detailEditorId, otherEditorId]);
 
-  // 初次挂载时，回填数据 (only once)
+  // 添加新的 useEffect 来处理 Quill 内容的更新
   useEffect(() => {
-    if (firstLoadRef.current && initialData) {
-      setProjectInfo((prev) => ({
+    if (initialData) {
+      // 更新普通字段
+      setProjectInfo(prev => ({
         ...prev,
-        ...initialData,
+        ...initialData
       }));
 
-      // 回填 Quill
+      // 更新 Quill 内容
       if (detailQuillRef.current && initialData.detailContent) {
-        detailQuillRef.current.root.innerHTML = initialData.detailContent;
-      }
-      if (otherQuillRef.current && initialData.otherContent) {
-        otherQuillRef.current.root.innerHTML = initialData.otherContent;
+        const quill = detailQuillRef.current;
+        if (quill.root.innerHTML !== initialData.detailContent) {
+          quill.root.innerHTML = initialData.detailContent;
+        }
       }
 
-      firstLoadRef.current = false; // 标记已加载
+      if (otherQuillRef.current && initialData.otherContent) {
+        const quill = otherQuillRef.current;
+        if (quill.root.innerHTML !== initialData.otherContent) {
+          quill.root.innerHTML = initialData.otherContent;
+        }
+      }
     }
   }, [initialData]);
 
-  // Quill 专用：更新某个字段
+  // Quill 更新处理
   const handleQuillChange = (key, htmlValue) => {
-    const updated = { ...projectInfo, [key]: htmlValue };
-    setProjectInfo(updated);
-    // 立刻通知父组件
-    onChange && onChange(itemId, updated);
+    setProjectInfo(prev => {
+      const updated = { ...prev, [key]: htmlValue };
+      onChange && onChange(itemId, updated);
+      return updated;
+    });
   };
 
   // 普通字段更新
   const updateProjectField = (key, value) => {
-    const updated = { ...projectInfo, [key]: value };
-    setProjectInfo(updated);
-    onChange && onChange(itemId, updated);
+    setProjectInfo(prev => {
+      const updated = { ...prev, [key]: value };
+      onChange && onChange(itemId, updated);
+      return updated;
+    });
   };
 
   // input onChange
@@ -128,26 +146,92 @@ function Project({
     }
   };
 
-  // 文件
-  const handleFileChange = (e) => {
+  // 添加图片压缩函数
+  const compressImage = (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // 设置最大宽度和高度
+          const maxWidth = 1024;
+          const maxHeight = 1024;
+          
+          // 等比例缩放
+          if (width > height) {
+            if (width > maxWidth) {
+              height = Math.round((height * maxWidth) / width);
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = Math.round((width * maxHeight) / height);
+              height = maxHeight;
+            }
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          
+          // 转换为 base64，使用较低的质量
+          canvas.toBlob((blob) => {
+            resolve(blob);
+          }, 'image/jpeg', 0.6); // 压缩质量为 0.6
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // 修改文件处理函数
+  const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    
     let fileType = '';
     if (file.type.includes('image')) {
       fileType = 'image';
+      // 压缩图片
+      try {
+        const compressedBlob = await compressImage(file);
+        const reader = new FileReader();
+        reader.onload = () => {
+          updateProjectField('mediaType', fileType);
+          updateProjectField('mediaFile', new File([compressedBlob], file.name, { type: 'image/jpeg' }));
+          updateProjectField('mediaPreview', reader.result);
+        };
+        reader.readAsDataURL(compressedBlob);
+      } catch (error) {
+        console.error('图片压缩失败:', error);
+        alert('图片处理失败，请重试');
+      }
     } else if (file.type.includes('video')) {
+      // 视频文件大小限制
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        alert('视频文件大小不能超过10MB');
+        return;
+      }
       fileType = 'video';
+      const reader = new FileReader();
+      reader.onload = () => {
+        updateProjectField('mediaType', fileType);
+        updateProjectField('mediaFile', file);
+        updateProjectField('mediaPreview', reader.result);
+      };
+      reader.readAsDataURL(file);
     } else {
       alert('仅支持图片或视频文件');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateProjectField('mediaType', fileType);
-      updateProjectField('mediaFile', file);
-      updateProjectField('mediaPreview', reader.result);
-    };
-    reader.readAsDataURL(file);
   };
 
   // 移除媒体
@@ -238,6 +322,7 @@ function Project({
                   type="file"
                   onChange={handleFileChange}
                   style={{ display: 'none' }}
+                  accept="image/*,video/*"
               />
               <div className="upload-actions">
                 <button
@@ -251,6 +336,9 @@ function Project({
                 <button onClick={removeMedia} className="remove-media-button">
                   Remove Media
                 </button>
+              </div>
+              <div className="upload-hint" style={{ fontSize: '12px', color: '#666' }}>
+                支持的格式：图片(自动压缩)、视频(≤10MB)
               </div>
             </div>
             {projectInfo.mediaPreview && (

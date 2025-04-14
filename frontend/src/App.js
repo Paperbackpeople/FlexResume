@@ -74,10 +74,10 @@ function App() {
                         <ProjectSliderWrapper username={username} version={version} />
                     </div>
                     <div className={`section ${activeSection === 'Internship' ? 'is-visible' : 'is-hidden'}`}>
-                        <InternshipSliderWrapper/>
+                        <InternshipSliderWrapper username={username} version={version} />
                     </div>
                     <div className={`section ${activeSection === 'Work' ? 'is-visible' : 'is-hidden'}`}>
-                        <WorkExperienceSliderWrapper/>
+                        <WorkExperienceSliderWrapper username={username} version={version} />
                     </div>
                     <div className={`section ${activeSection === 'Skills' ? 'is-visible' : 'is-hidden'}`}>
                         <Skill username={username} version={version}/>
@@ -90,6 +90,12 @@ function App() {
             {!isSmallScreen &&
                 (<div className="preview">
                         <h1>Preview</h1>
+                        <button 
+                            onClick={() => window.open(`/resume/${username}/${version}`, '_blank')}
+                            className="preview-button"
+                        >
+                            Open Preview
+                        </button>
                     </div>
                 )}
         </div>

@@ -1,0 +1,12 @@
+.resume-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background-color: white;
+}
+
+@media (max-width: 768px) {
+    .resume-container {
+        padding: 10px;
+    }
+} 

@@ -25,18 +25,22 @@ function ProjectSliderWrapper({ username, version }) {
         console.log('Fetched project data:', res.data);
 
         if (res.data && res.data.projectData) {
-          // e.g. { projectData: { project0: {...}, project1: {...} }}
           const projectData = res.data.projectData;
-
-          // 取出所有 key 并排序，保证顺序 "project0", "project1", ...
           const keys = Object.keys(projectData).sort();
-          // 生成对应的卡片列表
+          
+          // 修改这里的数据规范化逻辑
+          const normalizedData = {};
+          keys.forEach((key) => {
+            // 直接使用原始的 key，不要重新生成
+            normalizedData[key] = projectData[key];
+          });
+
+          // 使用原始的 key 生成列表
           const newList = keys.map((key) => ({ id: key }));
 
           setProjectList(newList);
-          setAllProjectData(projectData);
+          setAllProjectData(normalizedData);
         } else {
-          // 若没数据则创建一个空卡片
           setProjectList([{ id: 'project0' }]);
           setAllProjectData({});
         }

@@ -1,0 +1,162 @@
+{
+  "resume": "Resume",
+  "personalInfo": "Personal Information",
+  "education": "Education",
+  "major": "Major",
+  "degree": "Degree",
+  "projectExperience": "Project Experience",
+  "internshipExperience": "Internship Experience",
+  "skills": "Professional Skills",
+  "backToOverview": "Back to Overview",
+  "modules" : "Main Courses",
+  "scholarships" : "Scholarships",
+  "name": "Name: Zhaoyu Wang",
+  "emailPrefix": "Email：",
+  "emailAddress": "e1326002@u.nus.edu",
+  "phone": "Phone: +86 15690701976 / +65 89353349",
+  "zhengzhi" : "",
+  "age": "Age: 23",
+  "techStack" : "Tech Stack",
+  "skillsList": [
+    {
+      "category": "Programming Languages",
+      "brief": "Java (Proficient), Python (Proficient), C (Familiar), MATLAB, SQL, HTML, Pandas"
+    },
+    {
+      "category": "Web Development",
+      "brief": "Springboot, Redis, Vue.js, React, Flask"
+    },
+    {
+      "category": "Frameworks & Libraries",
+      "brief": "TensorFlow, PyTorch, MyBatis, GAMS, Transformer Models, LLM"
+    },
+    {
+      "category": "Databases",
+      "brief": "MySQL, PostgreSQL, MongoDB, Citus (PostgreSQL Cluster)"
+    },
+    {
+      "category": "DevOps & Cloud",
+      "brief": "Docker, Kubernetes (k8s), AWS, Ali Cloud"
+    },
+    {
+      "category": "Tools",
+      "brief": "Git, Linux, Anaconda, Microsoft Office"
+    },
+    {
+      "category": "Languages",
+      "brief": "Chinese (Native), English (IELTS 7.0)"
+    }
+  ],
+  "educationList": [
+    {
+      "period": "2023-2025",
+      "school": "National University of Singapore",
+      "major": "Computer Science",
+      "degree": "Master of Computing",
+      "component": "Nus",
+      "logo": "https://www.wangzhaoyu.com/videos/nus.png"
+
+    },
+    {
+      "period": "2019-2023",
+      "school": "Beijing University of Posts and Telecommunications",
+      "major": "E-Commerce Engineering & Law",
+      "degree": "Bachelor of Management + Bachelor of Science",
+      "component": "Bupt",
+      "logo": "https://www.wangzhaoyu.com/videos/bupt.png"
+    }
+  ],
+  "internships": [
+  {
+    "name": "Level 3 AI, Singapore",
+    "brief": "Developed AI customer service solutions for multiple companies, designed and implemented the required chat databases, and deeply engaged in the development of related algorithms and workflows within the project.",
+    "time": "2024.09-Present",
+    "component": "InternshipOne",
+    "link": "https://www.lv3.ai",
+    "clickable": true
+  },
+  {
+    "name": "Dolby, Beijing",
+    "brief": "Contributed to the pHRTF project by collecting ear datasets, designing neural networks, and conducting data analysis.",
+    "time": "2023.07-2024.01",
+    "component": "InternshipTwo",
+    "clickable": true
+  },
+  {
+    "name": "Beijing ZX-CE Technology Co., Ltd.",
+    "brief": "Designed the user interface for a WeChat Mini Program for a coffee shop and participated in search engine optimization analysis.",
+    "time": "2022.08-2022.09",
+    "component": "InternshipThree",
+    "clickable": false
+  },
+  {
+    "name": "Pattern Recognition and Intelligent Systems Laboratory (Beijing)",
+    "brief": "Researched cross-modal person re-identification methods, completed data preprocessing, and implemented model visualization.",
+    "time": "2022.02-2022.06",
+    "component": "InternshipFour",
+    "clickable": false
+  }
+],
+"workDetail": "Work Details",
+"detailOne": "Developed AI chatbots for GetGo and Webuy, maintaining a customer satisfaction rate of over 90% while improving containment rate from 39% to 55%.",
+"detailTwo": "Optimized Webuy's room pricing algorithm, significantly enhancing pricing efficiency and accuracy.",
+"detailThree": "Built a public demonstration database by acquiring data through API integrations and web scraping, and developed an AI-driven booking assistant powered by large language models.",
+"detailFour": "Established early-stage data monitoring dashboards for two companies, deploying systems with Docker, Kubernetes, AWS, and PostgreSQL to ensure reliability and scalability; later created standardized metric monitoring dashboards using Metabase.",
+"detailFive": "Implemented automated data pipelines using Prefect, enabling seamless data retrieval from production environments and generating comprehensive reports through integrated analytics modules.",
+"conclusion-text": "Example video on data monitoring:",
+"videoWarning": "Your browser does not support video playback.",
+"BeiJing": "Beijing",
+"detailSix": "Participated in the personal head-related transfer function (pHRTF) project, participated the localization of ear dataset collection and designing neural networks for ear detection.",
+"detailSeven": "Deployed Stable Diffusion WebUI on Linux to experiment with generative AI, expanding datasets and improving accuracy by 4%.",
+"detailEight": "Enhanced ear datasets using CycleGAN, covering scenarios such as wearing headphones and earrings, thereby improving the diversity of training data.",
+"detailNine": "Developed scripts to test the pHRTF APK, evaluated the robustness of ear detection networks across different devices, and generated visualized reports.",
+"detailTen": "Created a database management system using Flask, Vue, and MySQL to support data statistics and downloads, accelerating the acquisition of data required by the development team.",
+"augmented": "Example of data augmentation:",
+
+"projects": [
+    {
+      "name": "China Food Delivery System",
+      "brief": "A food delivery system based on Vue and Spring Boot, implementing features such as user registration, login, food browsing, shopping cart, and order management.",
+      "time": "2024.05-2024.09",
+      "component": "ProjectOne",
+      "clickable": true
+    },
+    {
+      "name": "Distributed Treasure Hunt Game",
+      "brief": "A decentralized distributed treasure hunt game utilizing Java RMI to implement a decentralized registry. The system dynamically determines the primary and backup servers through an election mechanism, ensuring fault tolerance and high availability.",
+      "time": "2024.09-2024.11",
+      "component": "ProjectTwo",
+      "clickable": true
+    },
+    {
+      "name": "Evaluation of Automatic Differentiation in Machine Learning",
+      "brief": "Implemented gradient computation for GANs using MATLAB and PyTorch, comparing the efficiency and generative performance of automatic differentiation, manual differentiation, and numerical differentiation.",
+      "time": "2022.10-2023.04",
+      "component": "ProjectThree",
+      "clickable": false
+    },
+    {
+      "name": "MIT Exchange Program: Computer Vision",
+      "brief": "Learned computer vision and machine learning concepts, applied transfer learning using ResNet50, and implemented matching between real shoe images and sketches.",
+      "time": "2022.01-2022.02",
+      "component": "ProjectFour",
+      "clickable": false
+    },
+    {
+      "name": "3D Data Augmentation Methods for Person Re-Identification",
+      "brief": "Used the SMPL model to convert 2D portraits into 3D, evaluated the authenticity of 3D parameters with GANs, and resolved data insufficiency issues through 3D pose transformations.",
+      "time": "2021.05-2022.05",
+      "component": "ProjectFive",
+      "clickable": false
+    },
+    {
+      "name": "Smart Home Management System",
+      "brief": "Developed a RESTful smart home management system, improved data query efficiency with MyBatis and MySQL, and built the user interface using Vue.js.",
+      "time": "2021.07-2021.11",
+      "component": "ProjectSix",
+      "clickable": false
+    }
+  ],
+  "projectsDetail": "Project Details"
+}
+  

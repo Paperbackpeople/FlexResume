@@ -1,48 +1,148 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Slider from '../common/Slider';
-import Internship from './Internship'; // 使用 Internship 组件
+import Internship from './Internship';
+import axios from 'axios';
 
-function InternshipSliderWrapper() {
-  const [internshipList, setInternshipList] = useState([{ id: 0 }]);
+function InternshipSliderWrapper({ username, version }) {
+  const [internshipList, setInternshipList] = useState([{ id: 'internship0' }]);
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [allInternshipData, setAllInternshipData] = useState({});
+  const saveTimeoutRef = useRef(null);
 
-  // 新增一条 Internship
+  // 1. 加载后端已有实习经历
+  useEffect(() => {
+    async function fetchInternshipData() {
+      if (!username || !version) return;
+      try {
+        const res = await axios.get('/api/internship-info', {
+          params: { username, version },
+        });
+        console.log('Fetched internship data:', res.data);
+
+        if (res.data && res.data.internshipData) {
+          const internshipData = res.data.internshipData;
+          const keys = Object.keys(internshipData).sort();
+          
+          // 使用原始的 key
+          const normalizedData = {};
+          keys.forEach((key) => {
+            normalizedData[key] = internshipData[key];
+          });
+
+          const newList = keys.map((key) => ({ id: key }));
+          setInternshipList(newList);
+          setAllInternshipData(normalizedData);
+        } else {
+          setInternshipList([{ id: 'internship0' }]);
+          setAllInternshipData({});
+        }
+      } catch (err) {
+        console.error('fetch internship error:', err);
+      }
+    }
+    fetchInternshipData();
+  }, [username, version]);
+
+  // 2. 当数据改变后，10秒后自动保存
+  useEffect(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveAllInternships();
+    }, 10000);
+
+    return () => clearTimeout(saveTimeoutRef.current);
+  }, [allInternshipData]);
+
+  // 判断数据是否为空
+  const isValidInternshipData = (dataObj) => {
+    return Object.values(dataObj).some((val) => {
+      if (val == null) return false;
+      if (typeof val === 'string' && val.trim() === '') return false;
+      return true;
+    });
+  };
+
+  // 3. 保存函数
+  const saveAllInternships = async () => {
+    try {
+      const filteredData = {};
+      Object.entries(allInternshipData).forEach(([key, value]) => {
+        if (isValidInternshipData(value)) {
+          filteredData[key] = value;
+        }
+      });
+
+      if (Object.keys(filteredData).length === 0) {
+        console.log('实习数据全部为空, 不执行保存');
+        return;
+      }
+
+      const payload = {
+        username,
+        version,
+        internshipData: filteredData,
+      };
+      const res = await axios.post('/api/internship-info', payload);
+      console.log('自动保存成功:', res.data);
+    } catch (error) {
+      console.error('自动保存失败:', error);
+    }
+  };
+
+  // 4. 新增/删除实习经历
   const addInternship = () => {
     setInternshipList((prev) => {
-      const newList = [...prev, { id: prev.length }];
-      // 移动到新增卡片
+      const newId = `internship${prev.length}`;
+      const newList = [...prev, { id: newId }];
       setCurrentIndex(newList.length - 1);
       return newList;
     });
   };
 
-  // 删除一条 Internship
   const removeInternship = (removeIndex) => {
     setInternshipList((prev) => {
-      if (prev.length === 1) return prev; // 保证至少一项
+      if (prev.length === 1) return prev;
+      const newList = prev.filter((_, idx) => idx !== removeIndex);
 
-      const newList = prev.filter((_, index) => index !== removeIndex);
-      // 如果当前删除的是最后一张，回退到上一张
       setCurrentIndex((prevIndex) =>
         prevIndex >= removeIndex ? Math.max(0, prevIndex - 1) : prevIndex
       );
       return newList;
     });
+
+    setAllInternshipData((prev) => {
+      const copy = { ...prev };
+      const keyToDelete = `internship${removeIndex}`;
+      delete copy[keyToDelete];
+      return copy;
+    });
+  };
+
+  // 子组件更新 -> 父组件
+  const handleSingleInternshipChange = (internshipKey, newInternshipData) => {
+    setAllInternshipData((prev) => ({
+      ...prev,
+      [internshipKey]: newInternshipData,
+    }));
   };
 
   return (
     <Slider
-      // 必须把父组件维护的 currentIndex 传给子组件
       currentIndex={currentIndex}
       setCurrentIndex={setCurrentIndex}
       items={internshipList}
-      renderItem={(item, index, addItem, removeItem) => (
+      renderItem={(item, idx, addItem, removeItem) => (
         <Internship
           key={item.id}
-          index={index + 1}
-          isLast={index === internshipList.length - 1}
+          itemId={item.id}
+          index={idx}
+          isLast={idx === internshipList.length - 1}
           addInternship={addItem}
-          removeInternship={() => removeItem(index)}
+          removeInternship={() => removeItem(idx)}
+          onChange={handleSingleInternshipChange}
+          initialData={allInternshipData[item.id]}
         />
       )}
       addItem={addInternship}
