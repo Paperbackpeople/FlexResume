@@ -3,9 +3,8 @@ package com.example.flexresume.controller;
 import com.example.flexresume.model.ProjectDocument;
 import com.example.flexresume.repository.ProjectRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/project-info")
@@ -14,45 +13,38 @@ public class ProjectController {
     @Autowired
     private ProjectRepository projectRepository;
 
-    /**
-     * 保存或更新 Project 数据
-     * 要求：同一 username + version 只能有一条记录
-     * 如果已存在则更新，否则插入
-     * 并且若数据为空则不存
-     */
+    // 保存项目信息
     @PostMapping
-    public ProjectDocument saveProject(@RequestBody ProjectDocument doc) {
-        // 先校验空数据
-        if (doc.getProjectData() == null || doc.getProjectData().isEmpty()) {
-            System.out.println("前端提交的数据为空，不进行保存。");
-            return null; // 或者返回一个自定义异常/状态
+    public ProjectDocument saveProject(@RequestBody ProjectDocument project) {
+        // 根据 username 查询是否已存在
+        ProjectDocument existingProject = projectRepository.findByUsername(project.getUsername());
+
+        if (existingProject != null) {
+            // 如果用户存在，检查版本是否已存在
+            if (existingProject.getVersion() == project.getVersion()) {
+                // 更新已存在版本的内容
+                existingProject.setProjectData(project.getProjectData());
+            } else {
+                // 如果是新版本，只需要更新版本号和相关信息
+                existingProject.setVersion(project.getVersion());
+                existingProject.setProjectData(project.getProjectData());
+            }
+            return projectRepository.save(existingProject);
         }
 
-        // 检查是否已存在
-        Optional<ProjectDocument> existingOpt =
-                projectRepository.findByUsernameAndVersion(doc.getUsername(), doc.getVersion());
-
-        if (existingOpt.isPresent()) {
-            ProjectDocument existingDoc = existingOpt.get();
-            // 只更新 projectData
-            existingDoc.setProjectData(doc.getProjectData());
-            return projectRepository.save(existingDoc);
-        } else {
-            // 新插入
-            return projectRepository.save(doc);
-        }
+        // 如果用户不存在，插入新记录
+        return projectRepository.save(project);
     }
 
-    /**
-     * 获取某个 username + version 的 project 数据
-     */
+    // 根据用户名和版本号获取项目信息
     @GetMapping
-    public ProjectDocument getProject(
-            @RequestParam("username") String username,
-            @RequestParam("version") int version
-    ) {
-        Optional<ProjectDocument> existingOpt =
-                projectRepository.findByUsernameAndVersion(username, version);
-        return existingOpt.orElse(null);
+    public ResponseEntity<ProjectDocument> getProjectByUsernameAndVersion(
+            @RequestParam String username,
+            @RequestParam int version) {
+        ProjectDocument project = projectRepository.findByUsernameAndVersion(username, version).orElse(null);
+        if (project == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(project);
     }
 }

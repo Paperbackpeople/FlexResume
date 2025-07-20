@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Slider from '../common/Slider';
 import Project from './Project';
 import axios from 'axios';
@@ -14,10 +14,24 @@ function ProjectSliderWrapper({ username, version }) {
   // 定时器 ref，用来控制 10 秒后自动保存
   const saveTimeoutRef = useRef(null);
 
+  // 检查用户是否已登录
+  const isLoggedIn = () => {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    return !!(token && userId);
+  };
+
   // 1. 加载后端已有项目
   useEffect(() => {
     async function fetchProjectData() {
       if (!username || !version) return;
+      
+      // 检查登录状态
+      if (!isLoggedIn()) {
+        console.log('用户未登录，跳过项目数据获取');
+        return;
+      }
+
       try {
         const res = await axios.get('/api/project-info', {
           params: { username, version },
@@ -61,7 +75,7 @@ function ProjectSliderWrapper({ username, version }) {
     }, 10000);
 
     return () => clearTimeout(saveTimeoutRef.current);
-  }, [allProjectData]);
+  }, [allProjectData, saveAllProjects]);
 
   // 判断卡片是否为空（至少有一个字段非空即认为有效）
   const isValidProjectData = (dataObj) => {
@@ -73,7 +87,13 @@ function ProjectSliderWrapper({ username, version }) {
   };
 
   // 3. 保存函数
-  const saveAllProjects = async () => {
+  const saveAllProjects = useCallback(async () => {
+    // 检查登录状态
+    if (!isLoggedIn()) {
+      console.log('用户未登录，跳过项目数据保存');
+      return;
+    }
+
     try {
       // 过滤掉完全空的卡片
       const filteredData = {};
@@ -98,7 +118,7 @@ function ProjectSliderWrapper({ username, version }) {
     } catch (error) {
       console.error('自动保存失败:', error);
     }
-  };
+  }, [allProjectData, username, version]);
 
   // 4. 新增/删除项目
   const addProject = () => {

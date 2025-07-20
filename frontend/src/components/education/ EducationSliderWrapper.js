@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Slider from '../common/Slider';
 import Education from './Education';
 import axios from 'axios';
@@ -13,11 +13,24 @@ function EducationSliderWapper({ username, version }) {
     // 定时器，10 秒自动保存
     const saveTimeoutRef = useRef(null);
 
+    // 检查用户是否已登录
+    const isLoggedIn = () => {
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        return !!(token && userId);
+    };
+
     // --------------------------
     // 1. 加载时, fetch 已有数据
     // --------------------------
     useEffect(() => {
         async function fetchData() {
+            // 检查登录状态
+            if (!isLoggedIn()) {
+                console.log('用户未登录，跳过教育数据获取');
+                return;
+            }
+
             try {
                 const res = await axios.get('/api/education-info', { params: { username, version }});
                 const doc = res.data;  // doc 就是单个对象
@@ -52,7 +65,7 @@ function EducationSliderWapper({ username, version }) {
         }, 10000);
 
         return () => clearTimeout(saveTimeoutRef.current);
-    }, [educationData]);
+    }, [educationData, saveAllEducationData]);
 
     // --------------------------
     // 3. 统一保存函数
@@ -69,7 +82,13 @@ function EducationSliderWapper({ username, version }) {
         });
     };
 
-    const saveAllEducationData = async () => {
+    const saveAllEducationData = useCallback(async () => {
+        // 检查登录状态
+        if (!isLoggedIn()) {
+            console.log('用户未登录，跳过教育数据保存');
+            return;
+        }
+
         try {
             // 过滤空数据
             const filteredData = {};
@@ -96,7 +115,7 @@ function EducationSliderWapper({ username, version }) {
         } catch (error) {
             console.error('保存教育信息时出错:', error);
         }
-    };
+    }, [educationData, username, version]);
 
     // --------------------------
     // 4. 子组件 -> 父组件

@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface EducationRepository extends MongoRepository<EducationDocument, String> {
     Optional<EducationDocument> findByUsernameAndVersion(String username, int version);
+    EducationDocument findByUsername(String username); // 新增
 }

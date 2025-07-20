@@ -3,9 +3,8 @@ package com.example.flexresume.controller;
 import com.example.flexresume.model.InternshipDocument;
 import com.example.flexresume.repository.InternshipRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/internship-info")
@@ -14,42 +13,38 @@ public class InternshipController {
     @Autowired
     private InternshipRepository internshipRepository;
 
-    /**
-     * 保存或更新 Internship 数据
-     */
+    // 保存实习信息
     @PostMapping
-    public InternshipDocument saveInternship(@RequestBody InternshipDocument doc) {
-        // 先校验空数据
-        if (doc.getInternshipData() == null || doc.getInternshipData().isEmpty()) {
-            System.out.println("前端提交的数据为空，不进行保存。");
-            return null;
+    public InternshipDocument saveInternship(@RequestBody InternshipDocument internship) {
+        // 根据 username 查询是否已存在
+        InternshipDocument existingInternship = internshipRepository.findByUsername(internship.getUsername());
+
+        if (existingInternship != null) {
+            // 如果用户存在，检查版本是否已存在
+            if (existingInternship.getVersion() == internship.getVersion()) {
+                // 更新已存在版本的内容
+                existingInternship.setInternshipData(internship.getInternshipData());
+            } else {
+                // 如果是新版本，只需要更新版本号和相关信息
+                existingInternship.setVersion(internship.getVersion());
+                existingInternship.setInternshipData(internship.getInternshipData());
+            }
+            return internshipRepository.save(existingInternship);
         }
 
-        // 检查是否已存在
-        Optional<InternshipDocument> existingOpt =
-                internshipRepository.findByUsernameAndVersion(doc.getUsername(), doc.getVersion());
-
-        if (existingOpt.isPresent()) {
-            InternshipDocument existingDoc = existingOpt.get();
-            // 只更新 internshipData
-            existingDoc.setInternshipData(doc.getInternshipData());
-            return internshipRepository.save(existingDoc);
-        } else {
-            // 新插入
-            return internshipRepository.save(doc);
-        }
+        // 如果用户不存在，插入新记录
+        return internshipRepository.save(internship);
     }
 
-    /**
-     * 获取某个 username + version 的 internship 数据
-     */
+    // 根据用户名和版本号获取实习信息
     @GetMapping
-    public InternshipDocument getInternship(
-            @RequestParam("username") String username,
-            @RequestParam("version") int version
-    ) {
-        Optional<InternshipDocument> existingOpt =
-                internshipRepository.findByUsernameAndVersion(username, version);
-        return existingOpt.orElse(null);
+    public ResponseEntity<InternshipDocument> getInternshipByUsernameAndVersion(
+            @RequestParam String username,
+            @RequestParam int version) {
+        InternshipDocument internship = internshipRepository.findByUsernameAndVersion(username, version).orElse(null);
+        if (internship == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(internship);
     }
 } 

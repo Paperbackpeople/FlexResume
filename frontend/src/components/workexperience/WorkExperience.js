@@ -1,8 +1,17 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './WorkExperience.css';
-import axios from 'axios';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
+
+// 获取token和userId的工具函数
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  const userId = localStorage.getItem('userId');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (userId) headers['X-User-Id'] = userId;
+  return headers;
+}
 
 const WorkExperience = ({
   itemId,
@@ -103,16 +112,16 @@ const WorkExperience = ({
         }
       }
     }
-  }, [initialData]);
+  }, [initialData, handleQuillChange]);
 
   // 处理 Quill 内容改变
-  const handleQuillChange = (key, value) => {
+  const handleQuillChange = useCallback((key, value) => {
     setWorkExperienceInfo((prev) => {
       const updated = { ...prev, [key]: value };
       onChange(itemId, updated);
       return updated;
     });
-  };
+  }, [itemId, onChange]);
 
   // 处理普通字段改变
   const handleInputChange = (key, value) => {

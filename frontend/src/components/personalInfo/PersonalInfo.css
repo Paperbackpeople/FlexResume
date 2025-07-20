@@ -36,12 +36,41 @@
   gap: 15px;
 }
 
+.info-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
 .info-title {
   font-size: 24px;
   font-weight: bold;
-  margin-bottom: 10px;
-  width: 100%;
   text-align: left;
+}
+
+.import-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.import-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.import-button:hover {
+  background-color: #45a049;
+}
+
+.json-upload {
+  display: none;
 }
 
 .input-row {

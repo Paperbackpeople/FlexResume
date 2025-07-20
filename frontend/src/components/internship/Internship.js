@@ -1,7 +1,18 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import './Internship.css';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
+import axios from 'axios';
+
+// 获取token和userId的工具函数
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  const userId = localStorage.getItem('userId');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (userId) headers['X-User-Id'] = userId;
+  return headers;
+}
 
 function Internship({
   itemId,
@@ -103,16 +114,16 @@ function Internship({
         }
       }
     }
-  }, [initialData]);
+  }, [initialData, handleQuillChange]);
 
   // Quill 更新处理
-  const handleQuillChange = (key, htmlValue) => {
+  const handleQuillChange = useCallback((key, htmlValue) => {
     setInternshipInfo(prev => {
       const updated = { ...prev, [key]: htmlValue };
       onChange && onChange(itemId, updated);
       return updated;
     });
-  };
+  }, [itemId, onChange]);
 
   // 普通字段更新
   const updateInternshipField = (key, value) => {

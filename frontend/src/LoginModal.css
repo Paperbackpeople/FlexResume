@@ -1,0 +1,95 @@
+/* src/components/LoginModal.css */
+.login-modal {
+  background: rgba(255,255,255,0.85);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 40px 32px 32px 32px;
+  min-width: 320px;
+  max-width: 90vw;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10001;
+}
+
+.brand-title {
+  font-family: 'Brush Script MT', cursive, '华文行楷', '楷体', serif;
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #2e5b87;
+  text-align: center;
+  margin-bottom: 20px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+  letter-spacing: 2px;
+  background: linear-gradient(45deg, #2e5b87, #42b983);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: titleGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes titleGlow {
+  0% {
+    filter: drop-shadow(0 0 5px rgba(46, 91, 135, 0.3));
+  }
+  100% {
+    filter: drop-shadow(0 0 15px rgba(66, 185, 131, 0.5));
+  }
+}
+
+.login-modal h2 {
+  margin-bottom: 24px;
+  color: #2e5b87;
+}
+
+.login-modal form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.login-modal input {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+}
+
+.login-modal button {
+  margin-top: 8px;
+  padding: 10px 0;
+  border-radius: 6px;
+  border: none;
+  background: linear-gradient(90deg, #42b983, #2e5b87);
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.login-modal button:hover {
+  background: linear-gradient(90deg, #2e5b87, #42b983);
+}
+
+.login-switch {
+  margin-top: 18px;
+  color: #666;
+  font-size: 15px;
+  text-align: center;
+}
+
+.login-switch span {
+  color: #2e5b87;
+  cursor: pointer;
+  margin-left: 4px;
+  text-decoration: underline;
+}
+
+.login-error {
+  color: #e74c3c;
+  font-size: 14px;
+  margin-top: -8px;
+  margin-bottom: 4px;
+}

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Slider from '../common/Slider';
 import WorkExperience from './WorkExperience';
 import axios from 'axios';
@@ -9,11 +9,25 @@ function WorkExperienceSliderWrapper({ username, version }) {
   const [allWorkExperienceData, setAllWorkExperienceData] = useState({});
   const saveTimeoutRef = useRef(null);
 
+  // 检查用户是否已登录
+  const isLoggedIn = () => {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    return !!(token && userId);
+  };
+
   useEffect(() => {
     async function fetchWorkExperienceData() {
       if (!username || !version) return;
+      
+      // 检查登录状态
+      if (!isLoggedIn()) {
+        console.log('用户未登录，跳过工作经验数据获取');
+        return;
+      }
+
       try {
-        const res = await axios.get('/api/workexperience-info', {
+        const res = await axios.get('/api/work-experience-info', {
           params: { username, version },
         });
         console.log('Fetched work experience data:', res.data);
@@ -41,6 +55,25 @@ function WorkExperienceSliderWrapper({ username, version }) {
     fetchWorkExperienceData();
   }, [username, version]);
 
+  const saveAllWorkExperiences = useCallback(async () => {
+    // 检查登录状态
+    if (!isLoggedIn()) {
+      console.log('用户未登录，跳过工作经验数据保存');
+      return;
+    }
+
+    try {
+      await axios.post('/api/work-experience-info', {
+        username,
+        version,
+        workExperienceData: allWorkExperienceData,
+      });
+      console.log('Work experience data saved successfully');
+    } catch (err) {
+      console.error('Error saving work experience data:', err);
+    }
+  }, [allWorkExperienceData, username, version]);
+
   useEffect(() => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -50,20 +83,7 @@ function WorkExperienceSliderWrapper({ username, version }) {
     }, 10000);
 
     return () => clearTimeout(saveTimeoutRef.current);
-  }, [allWorkExperienceData]);
-
-  const saveAllWorkExperiences = async () => {
-    try {
-      await axios.post('/api/workexperience-info', {
-        username,
-        version,
-        workExperienceData: allWorkExperienceData,
-      });
-      console.log('Work experience data saved successfully');
-    } catch (err) {
-      console.error('Error saving work experience data:', err);
-    }
-  };
+  }, [allWorkExperienceData, saveAllWorkExperiences]);
 
   const addWorkExperience = () => {
     setWorkExperienceList((prev) => {

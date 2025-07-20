@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: resume-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: resumedb
+      MONGO_INITDB_ROOT_PASSWORD: Wangzhaoyu011207
+      MONGO_INITDB_DATABASE: resume_builder
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - resume-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  resume-network:
+    driver: bridge 

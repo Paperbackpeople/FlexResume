@@ -6,6 +6,9 @@ import EducationSliderWapper from './components/education/ EducationSliderWrappe
 import InternshipSliderWrapper from './components/internship/InternshipSliderWrapper';
 import WorkExperienceSliderWrapper from './components/workexperience/WorkExperienceSliderWrapper';
 import Skill from './components/skill/Skill';
+import ResumePreview from './components/resume/ResumePreview';
+import ErrorBoundary from './components/resume/ErrorBoundary';
+import LoginModal from './components/LoginModal';
 
 import './App.css';
 
@@ -14,6 +17,7 @@ function App() {
     const [username, setUsername] = useState('');
     const [version, setVersion] = useState(1);
     const [isSmallScreen, setIsSmallScreen] = useState(false);
+    const [isLogin, setIsLogin] = useState(!!localStorage.getItem('token'));
 
     // 动态检测屏幕大小
     useEffect(() => {
@@ -31,11 +35,38 @@ function App() {
         // 清理事件监听
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    // 监听登录状态变化，更新用户信息
     useEffect(() => {
-        // 模拟从 API 或登录状态中获取
-        setUsername('zhaoyu');
-        setVersion(1);
+        if (isLogin) {
+            // 登录后，从localStorage获取userId作为username
+            const userId = localStorage.getItem('userId');
+            if (userId) {
+                setUsername(userId);
+                setVersion(1); // 默认加载版本1
+                console.log('用户登录成功，加载用户数据:', userId, '版本:', 1);
+            }
+        } else {
+            // 未登录时清空用户信息
+            setUsername('');
+            setVersion(1);
+        }
+    }, [isLogin]);
+
+    // 初始化时检查登录状态并设置用户信息
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        
+        if (token && userId) {
+            // 如果已有登录信息，直接设置
+            setUsername(userId);
+            setVersion(1);
+            setIsLogin(true);
+            console.log('检测到已有登录信息，加载用户数据:', userId, '版本:', 1);
+        }
     }, []);
+
     return (
         <div className="container">
             <div className="App">
@@ -65,7 +96,7 @@ function App() {
                 {/* Dynamic Sections */}
                 <div className="dynamic-sections">
                     <div className={`section ${activeSection === 'Personal Info' ? 'is-visible' : 'is-hidden'}`}>
-                        <PersonalInfo/>
+                        <PersonalInfo username={username} version={version}/>
                     </div>
                     <div className={`section ${activeSection === 'Education' ? 'is-visible' : 'is-hidden'}`}>
                         <EducationSliderWapper username={username} version={version}/>
@@ -87,16 +118,50 @@ function App() {
             {/* 中间分割线 */}
             {!isSmallScreen && (<div className="divider"></div>)}
 
-            {!isSmallScreen &&
-                (<div className="preview">
+            {!isLogin && (
+                <div className="glass-mask">
+                    <img className="glass-bg" src={process.env.PUBLIC_URL + '/image.png'} alt="bg" />
+                    <div className="glass-title">FlexResume</div>
+                    <LoginModal onLogin={token => {
+                        localStorage.setItem('token', token);
+                        setIsLogin(true);
+                    }} />
+                </div>
+            )}
+
+            {!isSmallScreen ? (
+                isLogin ? (
+                    <div className="preview">
                         <h1>Preview</h1>
-                        <button 
-                            onClick={() => window.open(`/resume/${username}/${version}`, '_blank')}
-                            className="preview-button"
-                        >
-                            Open Preview
-                        </button>
+                        <ErrorBoundary>
+                        <ResumePreview username={username} version={version} />
+                        </ErrorBoundary>
                     </div>
+                ) : (
+                    <div className="preview">
+                        <h1>Preview</h1>
+                        <div style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            justifyContent: 'center', 
+                            height: '100%',
+                            color: '#666',
+                            fontSize: '1.2rem'
+                        }}>
+                            请先登录以查看简历预览
+                        </div>
+                    </div>
+                )
+                ) : (
+                <button 
+                    className="preview-button"
+                    onClick={() => {
+                    // 在新窗口或模态框中打开预览
+                    window.open(`/preview/${username}/${version}`, '_blank');
+                    }}
+                >
+                    预览简历
+                </button>
                 )}
         </div>
     );

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 import './Skill.css';
@@ -8,6 +8,13 @@ const Skill = ({ username, version }) => {
     const quillRef = useRef(null);       // Quill 编辑器引用
     const saveTimeout = useRef(null);    // 保存定时器引用
     const [content, setContent] = useState(''); // 从后端加载的内容状态
+
+    // 检查用户是否已登录
+    const isLoggedIn = () => {
+        const token = localStorage.getItem('token');
+        const userId = localStorage.getItem('userId');
+        return !!(token && userId);
+    };
 
     /**
      * 1. 初始化 Quill 编辑器
@@ -28,7 +35,6 @@ const Skill = ({ username, version }) => {
                 toolbar: [
                     [{ header: [1, 2, 3, false] }],
                     ['bold', 'italic', 'underline'],
-                    ['link'],
                     [{ list: 'ordered' }, { list: 'bullet' }],
                 ],
             },
@@ -74,12 +80,18 @@ const Skill = ({ username, version }) => {
 
         // 组件卸载或 content 改变前，清理当前定时器
         return () => clearTimeout(saveTimeout.current);
-    }, [content]);
+    }, [content, saveSkillContent]);
 
     /**
      * 4. 从后端加载技能内容
      */
     const fetchSkillContent = async (username, version) => {
+        // 检查登录状态
+        if (!isLoggedIn()) {
+            console.log('用户未登录，跳过技能数据获取');
+            return;
+        }
+
         try {
             const response = await axios.get(`/api/skill/${username}/${version}`);
             const fetchedContent = response.data.content;
@@ -97,7 +109,13 @@ const Skill = ({ username, version }) => {
     /**
      * 5. 自动保存技能内容到后端
      */
-    const saveSkillContent = async () => {
+    const saveSkillContent = useCallback(async () => {
+        // 检查登录状态
+        if (!isLoggedIn()) {
+            console.log('用户未登录，跳过技能数据保存');
+            return;
+        }
+
         if (!quillRef.current) return;
         const htmlContent = quillRef.current.root.innerHTML; // 获取编辑器内容
         const data = { username, version, content: htmlContent };
@@ -108,7 +126,7 @@ const Skill = ({ username, version }) => {
         } catch (error) {
             console.error('自动保存失败:', error);
         }
-    };
+    }, [username, version]);
 
     return (
         <div className="skill-container">

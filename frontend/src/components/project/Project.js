@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Project.css';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
+
+// 获取token和userId的工具函数
+// (已移除未用代码)
 
 function Project({
                    itemId,
@@ -111,16 +114,16 @@ function Project({
         }
       }
     }
-  }, [initialData]);
+  }, [initialData, handleQuillChange]);
 
   // Quill 更新处理
-  const handleQuillChange = (key, htmlValue) => {
+  const handleQuillChange = useCallback((key, htmlValue) => {
     setProjectInfo(prev => {
       const updated = { ...prev, [key]: htmlValue };
       onChange && onChange(itemId, updated);
       return updated;
     });
-  };
+  }, [itemId, onChange]);
 
   // 普通字段更新
   const updateProjectField = (key, value) => {

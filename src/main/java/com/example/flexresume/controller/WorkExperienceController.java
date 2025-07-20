@@ -3,43 +3,48 @@ package com.example.flexresume.controller;
 import com.example.flexresume.model.WorkExperienceDocument;
 import com.example.flexresume.repository.WorkExperienceRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Optional;
-
 @RestController
-@RequestMapping("/api/workexperience-info")
+@RequestMapping("/api/work-experience-info")
 public class WorkExperienceController {
 
     @Autowired
     private WorkExperienceRepository workExperienceRepository;
 
+    // 保存工作经验信息
     @PostMapping
-    public WorkExperienceDocument saveWorkExperience(@RequestBody WorkExperienceDocument doc) {
-        if (doc.getWorkExperienceData() == null || doc.getWorkExperienceData().isEmpty()) {
-            System.out.println("前端提交的数据为空，不进行保存。");
-            return null;
+    public WorkExperienceDocument saveWorkExperience(@RequestBody WorkExperienceDocument workExperience) {
+        // 根据 username 查询是否已存在
+        WorkExperienceDocument existingWorkExperience = workExperienceRepository.findByUsername(workExperience.getUsername());
+
+        if (existingWorkExperience != null) {
+            // 如果用户存在，检查版本是否已存在
+            if (existingWorkExperience.getVersion() == workExperience.getVersion()) {
+                // 更新已存在版本的内容
+                existingWorkExperience.setWorkExperienceData(workExperience.getWorkExperienceData());
+            } else {
+                // 如果是新版本，只需要更新版本号和相关信息
+                existingWorkExperience.setVersion(workExperience.getVersion());
+                existingWorkExperience.setWorkExperienceData(workExperience.getWorkExperienceData());
+            }
+            return workExperienceRepository.save(existingWorkExperience);
         }
 
-        Optional<WorkExperienceDocument> existingOpt =
-                workExperienceRepository.findByUsernameAndVersion(doc.getUsername(), doc.getVersion());
-
-        if (existingOpt.isPresent()) {
-            WorkExperienceDocument existingDoc = existingOpt.get();
-            existingDoc.setWorkExperienceData(doc.getWorkExperienceData());
-            return workExperienceRepository.save(existingDoc);
-        } else {
-            return workExperienceRepository.save(doc);
-        }
+        // 如果用户不存在，插入新记录
+        return workExperienceRepository.save(workExperience);
     }
 
+    // 根据用户名和版本号获取工作经验信息
     @GetMapping
-    public WorkExperienceDocument getWorkExperience(
-            @RequestParam("username") String username,
-            @RequestParam("version") int version
-    ) {
-        Optional<WorkExperienceDocument> existingOpt =
-                workExperienceRepository.findByUsernameAndVersion(username, version);
-        return existingOpt.orElse(null);
+    public ResponseEntity<WorkExperienceDocument> getWorkExperienceByUsernameAndVersion(
+            @RequestParam String username,
+            @RequestParam int version) {
+        WorkExperienceDocument workExperience = workExperienceRepository.findByUsernameAndVersion(username, version).orElse(null);
+        if (workExperience == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(workExperience);
     }
 } 

@@ -2,16 +2,35 @@ import React, { useState, useRef, useEffect } from 'react';
 import './PersonalInfo.css';
 import axios from 'axios';
 
-const PersonalInfo = () => {
+// 获取token和userId的工具函数
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  const userId = localStorage.getItem('userId');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (userId) headers['X-User-Id'] = userId;
+  return headers;
+}
+
+const PersonalInfo = ({ username, version }) => {
   const [inputs, setInputs] = useState({
-    username: 'zhaoyu',
-    version: 1,
+    username: username || '',
+    version: version || 1,
     profilePhoto: '',
     fields: [{ label: '', value: '' }]
   });
 
   const saveTimeout = useRef(null); // 用于存储定时器的引用
   const fileInputRef = useRef(null);
+
+  // 当username或version变化时，更新inputs状态
+  useEffect(() => {
+    setInputs(prev => ({
+      ...prev,
+      username: username || '',
+      version: version || 1
+    }));
+  }, [username, version]);
 
   // 自动保存逻辑
   useEffect(() => {
@@ -33,7 +52,7 @@ const PersonalInfo = () => {
 // 修改后的保存数据到后端方法
   const savePersonalInfo = async (data) => {
     try {
-      const response = await axios.post('/api/personal-info', data); // 增加保存 username 和 version
+      const response = await axios.post('/api/personal-info', data, { headers: getAuthHeaders() }); // 增加保存 username 和 version
       console.log('保存成功:', response.data);
     } catch (error) {
       console.error('保存个人信息出错:', error);
@@ -43,7 +62,7 @@ const PersonalInfo = () => {
 // 新增从后端获取数据的方法
   const fetchPersonalInfo = async (username, version) => {
     try {
-      const response = await axios.get(`/api/personal-info/${username}/${version}`);
+      const response = await axios.get(`/api/personal-info/${username}/${version}`, { headers: getAuthHeaders() });
       const fetchedData = response.data;
       if (fetchedData) {
         setInputs(fetchedData);
@@ -55,10 +74,11 @@ const PersonalInfo = () => {
 
 // 使用 useEffect 在组件加载时调用 fetchPersonalInfo
   useEffect(() => {
-    const username = 'zhaoyu'; // 假设是固定的，实际可通过登录信息动态获取
-    const version = 1; // 假设是固定的版本号
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    if (!token || !userId || !username) return; // 未登录或没有username不请求
     fetchPersonalInfo(username, version);
-  }, []);
+  }, [username, version]);
 
   // 更新输入框内容
   const handleFieldChange = (index, key, newValue) => {
@@ -144,7 +164,7 @@ const PersonalInfo = () => {
             {inputs.profilePhoto ? (
               <img src={inputs.profilePhoto} alt="Uploaded" className="photo-preview" />
             ) : (
-              <div className="photo-placeholder">Click to Upload</div>
+              <div className="photo-placeholder">Click to Upload Your Photo</div>
             )}
           </div>
           <input

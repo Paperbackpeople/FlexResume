@@ -3,6 +3,7 @@ package com.example.flexresume.controller;
 import com.example.flexresume.model.PersonalInfo;
 import com.example.flexresume.repository.PersonalInfoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -46,9 +47,13 @@ public class PersonalInfoController {
 
     // 根据用户名和版本号获取个人信息
     @GetMapping("/{username}/{version}")
-    public PersonalInfo getPersonalInfoByUsernameAndVersion(
+    public ResponseEntity<PersonalInfo> getPersonalInfoByUsernameAndVersion(
             @PathVariable String username,
             @PathVariable int version) {
-        return personalInfoRepository.findByUsernameAndVersion(username, version);
+        PersonalInfo personalInfo = personalInfoRepository.findByUsernameAndVersion(username, version);
+        if (personalInfo == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(personalInfo);
     }
 }

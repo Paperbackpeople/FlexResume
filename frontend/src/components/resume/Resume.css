@@ -1,0 +1,708 @@
+/* 简历预览主容器 */
+.resume-preview-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* PC端布局 */
+.resume-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  overflow-y: auto;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.resume {
+  /* 移除过渡效果，简历始终保持原位 */
+  max-width: 800px;
+  margin: 0 auto;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+/* 右侧详情面板 - 优化动画效果 */
+.detail-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: #fff;
+  padding: 20px;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+  box-sizing: border-box;
+  border-left: 1px solid #e0e0e0;
+  z-index: 1000;
+  
+  /* 初始状态 */
+  opacity: 0;
+  transform: translateX(30px);
+  
+  /* 使用 cubic-bezier 让动画更流畅 */
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 进入动画 */
+.detail-panel.slide-enter {
+  animation: slideInFade 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 离开动画 */
+.detail-panel.slide-leave {
+  animation: slideOutFade 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* 定义进入动画 */
+@keyframes slideInFade {
+  0% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* 定义离开动画 */
+@keyframes slideOutFade {
+  0% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}
+
+/* 为了确保详情面板完全覆盖，可以添加以下样式 */
+.resume-preview-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* 当显示详情时，给简历添加遮罩效果 */
+.show-detail .resume-container {
+  position: relative;
+}
+
+.show-detail .resume-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(2px);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+}
+
+.show-detail .resume-container::after {
+  opacity: 1;
+}
+
+/* 优化关闭按钮的动画 */
+.close-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  padding: 10px 20px;
+  border: none;
+  background: linear-gradient(90deg, #42b983, #2e5b87);
+  color: white;
+  font-size: 16px;
+  font-weight: bold;
+  border-radius: 25px;
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  
+  /* 添加平滑过渡 */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  /* 初始时稍微延迟出现 */
+  animation: fadeInButton 0.3s ease-out 0.3s both;
+}
+
+@keyframes fadeInButton {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.close-btn:hover {
+  background: linear-gradient(90deg, #2e5b87, #42b983);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+/* 各区块 */
+.section {
+  margin-bottom: 30px;
+  /* 确保右侧预览区域的section没有外框 */
+  border: none;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+h1 {
+  color: #2c3e50;
+  text-align: center;
+  font-size: 2rem;
+  margin: 0;
+}
+
+.resume-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+/* 刷新按钮样式 */
+.refresh-btn {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: color 0.3s, background-color 0.3s, transform 0.3s;
+  color: #666;
+  /* 确保旋转中心在按钮中心 */
+  transform-origin: center center;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background-color: #f5f5f5;
+  color: #2e5b87;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+/* 刷新中状态 */
+.refresh-btn.refreshing {
+  color: #42b983;
+  cursor: not-allowed;
+  animation: spin 1s linear infinite;
+}
+
+.refresh-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* 旋转动画 */
+@keyframes spin {
+  from {
+    transform: translateY(-50%) rotate(0deg);
+  }
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+h2,
+h3 {
+  color: #2e5b87;
+}
+
+/* 教育经历样式 - 与Vue保持一致 */
+.education-section {
+  margin-bottom: 30px;
+  /* 确保右侧预览区域的教育经历没有外框 */
+  border: none;
+  background: none;
+  box-shadow: none;
+  padding: 0;
+}
+
+.section-title {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #2e5b87;
+}
+
+/* 确保所有section的h2标题都使用相同的颜色 */
+.section h2 {
+  color: #2e5b87;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.education-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.education-item {
+  display: flex;
+  margin-bottom: 20px;
+  padding: 15px;
+  border-radius: 8px;
+  background-color: #f5f5f5;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.education-item.clickable:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.education-item:not(.clickable) {
+  cursor: not-allowed;
+}
+
+.education-item:not(.clickable):hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* 左侧容器 */
+.edu-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 20px;
+  min-width: 80px;
+}
+
+/* 时间样式 */
+.edu-period {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 10px;
+  text-align: center;
+  font-weight: bold;
+}
+
+/* 校徽容器 */
+.edu-logo {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 校徽图片 */
+.school-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+/* 右侧文字内容区 */
+.edu-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 学校名称 */
+.school-name {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin: 0 0 8px 0;
+}
+
+/* 专业和学位 */
+.major,
+.degree {
+  font-size: 14px;
+  color: #666;
+  margin: 4px 0;
+}
+
+/* 教育详情样式 */
+.education-detail {
+  padding: 20px;
+}
+
+/* 详情内容的进入动画 */
+.detail-content {
+  padding: 40px 20px;
+  opacity: 0;
+  animation: fadeInContent 0.5s ease-out 0.2s forwards;
+}
+
+@keyframes fadeInContent {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 离开时内容快速淡出 */
+.slide-leave .detail-content {
+  animation: fadeOutContent 0.3s ease-out forwards;
+}
+
+@keyframes fadeOutContent {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.detail-content h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 2rem;
+}
+
+.degree-info {
+  margin: 15px 0;
+}
+
+.degree-info .major {
+  font-size: 1.2em;
+  color: #2c3e50;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.highlight {
+  color: #2e5b87;
+  font-weight: bold;
+  margin-right: 15px;
+}
+
+.period {
+  color: #666;
+  font-size: 1.1em;
+}
+
+.honors {
+  color: #666;
+}
+
+.GPA {
+  color: #42b983;
+  font-weight: 500;
+}
+
+.modules h3,
+.scholarships h3 {
+  color: #2c3e50;
+  margin: 20px 0 10px;
+  font-size: 1.1em;
+}
+
+.modules ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  list-style: none;
+  padding: 0;
+}
+
+.modules li {
+  background: #f8f9fa;
+  padding: 8px 12px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.modules li:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+}
+
+.scholarships ul {
+  list-style: none;
+  padding: 0;
+}
+
+.scholarship-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 0;
+  border-bottom: 1px dashed #eee;
+}
+
+.year {
+  color: #666;
+}
+
+.award {
+  color: #42b983;
+  font-weight: 500;
+}
+
+/* 优化滚动条样式 */
+.resume-container::-webkit-scrollbar,
+.detail-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.resume-container::-webkit-scrollbar-thumb,
+.detail-panel::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.resume-container::-webkit-scrollbar-track,
+.detail-panel::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+/* 视频容器 */
+.video-container {
+  margin: 20px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.project-video {
+  width: 100%;
+  max-width: 100%;
+  display: block;
+}
+
+/* 响应式设计 - 小屏幕适配 */
+@media (max-width: 768px) {
+  .resume-container {
+    position: static;
+    width: 100%;
+    height: auto;
+    padding: 10px;
+    margin-bottom: 20px;
+    box-shadow: none;
+  }
+
+  .resume {
+    max-width: 100%;
+    margin: 0 auto;
+    transform: none !important;
+    box-shadow: none;
+    border-radius: 0;
+    padding: 10px;
+  }
+
+  .show-detail .resume {
+    /* 小屏幕时简历不左移 */
+    transform: none !important;
+    max-width: 100%;
+  }
+
+  /* 详情面板覆盖全屏 */
+  .detail-panel {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100vh;
+    margin: 0;
+    box-shadow: none;
+    border: none;
+    background: #fff;
+    z-index: 9999;
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  .detail-panel.slide-enter-active {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  .close-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+  }
+
+  .education-item {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .edu-left {
+    margin-right: 0;
+    margin-bottom: 15px;
+  }
+  
+  .edu-period {
+    margin-bottom: 5px;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  h3 {
+    font-size: 1rem;
+  }
+  
+  .detail-content {
+    padding-top: 60px;
+  }
+}
+
+/* 加载和错误状态 */
+.loading,
+.error {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.2rem;
+  color: #7f8c8d;
+}
+
+.error {
+  color: #e74c3c;
+}
+
+/* 个人信息样式 - 按照Vue项目格式 */
+.resume-info-container {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.resume-text-info {
+  flex: 1;
+}
+
+.resume-text-info p {
+  margin: 8px 0;
+  font-size: 1rem;
+  color: #2c3e50;
+}
+
+.resume-profile-photo {
+  width: 130px;
+  height: 180px;
+  object-fit: cover;
+  margin-left: 50px;
+  border: 1px solid #ccc;
+}
+
+/* 项目和实习经历样式 */
+.resume-project-container,
+.resume-internship-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.resume-project-item,
+.resume-internship-item {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.resume-project-item:hover,
+.resume-internship-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* 技能样式 */
+.resume-skill-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 15px;
+}
+
+.resume-skill-category {
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+}
+
+.skill-content b,
+.skill-content strong {
+  font-weight: bold;
+}
+
+/* 专业技能内容无外框 */
+.skill-content {
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  margin: 0 0 30px 0;
+}
+
+/* 让个人简历标题始终居中 */
+.resume-header {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.resume-header h1 {
+  flex: 1;
+  text-align: center;
+  margin: 0;
+}
+
+/* 重复的样式已移除 */
+
+/* 技能外框样式，参考Vue项目 */
+.skills-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+  padding: 15px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid #ccc;
+  background: #fff;
+}
+
+/* 更粗的加粗样式 */
+.skill-content b,
+.skill-content strong {
+  font-weight: 800;
+  color: #2e5b87;
+}

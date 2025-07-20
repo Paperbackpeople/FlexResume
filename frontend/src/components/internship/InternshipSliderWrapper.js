@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Slider from '../common/Slider';
 import Internship from './Internship';
 import axios from 'axios';
@@ -9,10 +9,24 @@ function InternshipSliderWrapper({ username, version }) {
   const [allInternshipData, setAllInternshipData] = useState({});
   const saveTimeoutRef = useRef(null);
 
+  // 检查用户是否已登录
+  const isLoggedIn = () => {
+    const token = localStorage.getItem('token');
+    const userId = localStorage.getItem('userId');
+    return !!(token && userId);
+  };
+
   // 1. 加载后端已有实习经历
   useEffect(() => {
     async function fetchInternshipData() {
       if (!username || !version) return;
+      
+      // 检查登录状态
+      if (!isLoggedIn()) {
+        console.log('用户未登录，跳过实习数据获取');
+        return;
+      }
+
       try {
         const res = await axios.get('/api/internship-info', {
           params: { username, version },
@@ -44,28 +58,13 @@ function InternshipSliderWrapper({ username, version }) {
   }, [username, version]);
 
   // 2. 当数据改变后，10秒后自动保存
-  useEffect(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
+  const saveAllInternships = useCallback(async () => {
+    // 检查登录状态
+    if (!isLoggedIn()) {
+      console.log('用户未登录，跳过实习数据保存');
+      return;
     }
-    saveTimeoutRef.current = setTimeout(() => {
-      saveAllInternships();
-    }, 10000);
 
-    return () => clearTimeout(saveTimeoutRef.current);
-  }, [allInternshipData]);
-
-  // 判断数据是否为空
-  const isValidInternshipData = (dataObj) => {
-    return Object.values(dataObj).some((val) => {
-      if (val == null) return false;
-      if (typeof val === 'string' && val.trim() === '') return false;
-      return true;
-    });
-  };
-
-  // 3. 保存函数
-  const saveAllInternships = async () => {
     try {
       const filteredData = {};
       Object.entries(allInternshipData).forEach(([key, value]) => {
@@ -89,6 +88,26 @@ function InternshipSliderWrapper({ username, version }) {
     } catch (error) {
       console.error('自动保存失败:', error);
     }
+  }, [allInternshipData, username, version]);
+
+  useEffect(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveAllInternships();
+    }, 10000);
+
+    return () => clearTimeout(saveTimeoutRef.current);
+  }, [allInternshipData, saveAllInternships]);
+
+  // 判断数据是否为空
+  const isValidInternshipData = (dataObj) => {
+    return Object.values(dataObj).some((val) => {
+      if (val == null) return false;
+      if (typeof val === 'string' && val.trim() === '') return false;
+      return true;
+    });
   };
 
   // 4. 新增/删除实习经历
