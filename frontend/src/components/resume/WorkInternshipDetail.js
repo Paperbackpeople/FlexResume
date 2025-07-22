@@ -2,68 +2,60 @@ import React from 'react';
 import DOMPurify from 'dompurify';
 import './Resume.css';
 
-const ProjectDetail = ({ projectId, projectData, onClose }) => {
-  if (!projectData || !projectData[projectId]) {
+const WorkInternshipDetail = ({ workId, workData, onClose }) => {
+  if (!workData || !workData[workId]) {
     return null;
   }
-
-  const project = projectData[projectId];
-
-  // 处理富文本内容的渲染
+  const work = workData[workId];
   const renderHtmlContent = (htmlContent) => {
     if (!htmlContent) return null;
-    // 使用 DOMPurify 清理HTML，防止XSS攻击
     const cleanHtml = DOMPurify.sanitize(htmlContent);
     return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
   };
-
   return (
     <div className="project-detail">
       <div className="detail-content">
-        <h2>{project.name}</h2>
+        <h2>{work.company}</h2>
         <div className="detail-info">
-          {/* 项目时间 */}
-          {project.time && (
+          {work.time && (
             <p className="project-period">
-              <span className="highlight">项目时间：</span>
-              <span className="period">{project.time}</span>
+              <span className="highlight">时间：</span>
+              <span className="period">{work.time}</span>
             </p>
           )}
-          
-          {/* 项目简介 */}
-          {project.summary && (
+          {work.position && (
             <div className="project-summary">
-              <p>{project.summary}</p>
+              <p>{work.position}</p>
             </div>
           )}
-
-          {/* 项目详情 */}
-          {project.detailContent && (
+          {work.summary && (
+            <div className="project-summary">
+              <p>{work.summary}</p>
+            </div>
+          )}
+          {work.detailContent && (
             <div className="project-details-section">
-              <h3>{project.detailTitle || '项目详情'}</h3>
-              {renderHtmlContent(project.detailContent)}
+              <h3>{work.detailTitle || '详情'}</h3>
+              {renderHtmlContent(work.detailContent)}
             </div>
           )}
-
-          {/* 媒体展示 */}
-          {project.mediaPreview && (
+          {work.mediaPreview && (
             <div className="media-section">
-              {/* 媒体说明放在上方 */}
-              {project.mediaDescription && (
-                <p className="media-description" style={{ marginBottom: 8 }}>{project.mediaDescription}</p>
+              {work.mediaDescription && (
+                <p className="media-description" style={{ marginBottom: 8 }}>{work.mediaDescription}</p>
               )}
-              {project.mediaType === 'video' ? (
+              {work.mediaType === 'video' ? (
                 <div className="video-container" style={{ width: '100%', maxWidth: '1000px', maxHeight: '500px', margin: '20px auto', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
                   <video controls className="project-video" style={{ width: '100%', height: 'auto', maxHeight: '400px', objectFit: 'contain', display: 'block' }}>
-                    <source src={project.mediaPreview} type="video/mp4" />
+                    <source src={work.mediaPreview} type="video/mp4" />
                     您的浏览器不支持视频播放
                   </video>
                 </div>
               ) : (
                 <div className="image-container" style={{ width: '100%', maxWidth: '1000px', maxHeight: '500px', margin: '20px auto', borderRadius: '8px', overflow: 'hidden', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <img 
-                    src={project.mediaPreview} 
-                    alt="项目展示" 
+                  <img
+                    src={work.mediaPreview}
+                    alt="工作/实习展示"
                     className="project-image"
                     style={{ width: '100%', height: 'auto', maxHeight: '400px', objectFit: 'contain', display: 'block' }}
                   />
@@ -71,12 +63,10 @@ const ProjectDetail = ({ projectId, projectData, onClose }) => {
               )}
             </div>
           )}
-
-          {/* 其他内容（如技术栈） */}
-          {project.otherContent && (
+          {work.otherContent && (
             <div className="other-section">
-              <h3>{project.otherTitle || '技术栈'}</h3>
-              {renderHtmlContent(project.otherContent)}
+              <h3>{work.otherTitle || '其他内容'}</h3>
+              {renderHtmlContent(work.otherContent)}
             </div>
           )}
         </div>
@@ -85,4 +75,4 @@ const ProjectDetail = ({ projectId, projectData, onClose }) => {
   );
 };
 
-export default ProjectDetail;
+export default WorkInternshipDetail; 

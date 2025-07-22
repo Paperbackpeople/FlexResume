@@ -49,10 +49,19 @@ const PersonalInfo = ({ username, version }) => {
   }, [inputs]);
 
   // 保存数据到后端
-// 修改后的保存数据到后端方法
   const savePersonalInfo = async (data) => {
+    // 检查是否有有效数据
+    const hasValidData = data.fields.some(field => 
+      field.label.trim() !== '' || field.value.trim() !== ''
+    ) || data.profilePhoto !== '';
+    
+    if (!hasValidData) {
+      console.log('没有有效数据，跳过保存');
+      return;
+    }
+
     try {
-      const response = await axios.post('/api/personal-info', data, { headers: getAuthHeaders() }); // 增加保存 username 和 version
+      const response = await axios.post('/api/personal-info', data, { headers: getAuthHeaders() });
       console.log('保存成功:', response.data);
     } catch (error) {
       console.error('保存个人信息出错:', error);
@@ -68,7 +77,12 @@ const PersonalInfo = ({ username, version }) => {
         setInputs(fetchedData);
       }
     } catch (error) {
+      if (error.response && error.response.status === 404) {
+        // 404 表示没有数据，这是正常的，不需要报错
+        console.log('用户暂无个人信息数据');
+      } else {
       console.error('获取个人信息出错:', error);
+      }
     }
   };
 

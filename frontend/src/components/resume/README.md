@@ -10,7 +10,7 @@ resume/
 ├── PersonalInfo.js       # 个人信息组件
 ├── Education.js          # 教育经历组件
 ├── ProjectExperience.js  # 项目经验组件
-├── InternshipExperience.js # 实习经历组件
+├── WorkInternshipExperience.js # 工作与实习经历组件
 ├── Skills.js             # 技能组件
 ├── ErrorBoundary.js      # 错误边界组件
 ├── Resume.css            # 样式文件
@@ -63,7 +63,7 @@ function MyComponent() {
 - `GET /api/personal-info/{username}/{version}` - 个人信息
 - `GET /api/education-info?username={username}&version={version}` - 教育信息
 - `GET /api/project-info?username={username}&version={version}` - 项目信息
-- `GET /api/internship-info?username={username}&version={version}` - 实习信息
+- `GET /api/workinternship-info?username={username}&version={version}` - 工作与实习信息
 - `GET /api/skill/{username}/{version}` - 技能信息
 
 ## 数据格式
@@ -122,6 +122,30 @@ function MyComponent() {
 }
 ```
 
+### 工作与实习信息
+```json
+{
+  "username": "string",
+  "version": "number",
+  "workInternshipData": {
+    "work0": {
+      "type": "work/internship",
+      "company": "公司名称",
+      "position": "职位",
+      "time": "时间",
+      "summary": "一句话简介",
+      "detailTitle": "详情标题",
+      "detailContent": "<p>富文本内容</p>",
+      "mediaType": "image/video",
+      "mediaPreview": "base64或url",
+      "mediaDescription": "媒体说明",
+      "otherTitle": "其他标题",
+      "otherContent": "<p>富文本内容</p>"
+    }
+  }
+}
+```
+
 ## 样式定制
 
 可以通过修改 `Resume.css` 文件来自定义样式，主要样式类包括：
@@ -131,7 +155,7 @@ function MyComponent() {
 - `.info-container` - 信息容器
 - `.education-item` - 教育项目
 - `.project-item` - 项目项目
-- `.internship-item` - 实习项目
+- `.workinternship-item` - 工作与实习项目
 - `.skill-category` - 技能分类
 
 ## 注意事项

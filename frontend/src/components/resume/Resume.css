@@ -231,14 +231,9 @@ h3 {
   color: #2e5b87;
 }
 
-/* 教育经历样式 - 与Vue保持一致 */
+/* 教育经历样式 - 清理后的版本 */
 .education-section {
   margin-bottom: 30px;
-  /* 确保右侧预览区域的教育经历没有外框 */
-  border: none;
-  background: none;
-  box-shadow: none;
-  padding: 0;
 }
 
 .section-title {
@@ -247,84 +242,85 @@ h3 {
   color: #2e5b87;
 }
 
-/* 确保所有section的h2标题都使用相同的颜色 */
-.section h2 {
-  color: #2e5b87;
-  font-size: 24px;
-  margin-bottom: 20px;
-}
-
 .education-list {
   display: flex;
   flex-direction: column;
   gap: 15px;
 }
 
+/* 教育经历项目 */
 .education-item {
   display: flex;
+  flex-direction: row;
+  align-items: center;
   margin-bottom: 20px;
   padding: 15px;
   border-radius: 8px;
   background-color: #f5f5f5;
+  border: 1px solid #ddd;
   transition: all 0.3s ease;
   cursor: pointer;
+  overflow: hidden;
+  position: relative;
 }
 
 .education-item.clickable:hover {
   transform: translateY(-5px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.education-item:not(.clickable) {
-  cursor: not-allowed;
-}
-
-.education-item:not(.clickable):hover {
-  transform: none;
-  box-shadow: none;
-}
-
-/* 左侧容器 */
-.edu-left {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-right: 20px;
-  min-width: 80px;
-}
-
-/* 时间样式 */
-.edu-period {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 10px;
-  text-align: center;
-  font-weight: bold;
+  background-color: #fff;
 }
 
 /* 校徽容器 */
 .edu-logo {
-  width: 60px;
-  height: 60px;
+  width: 110px;
+  min-width: 100px;
+  height: 100px;
+  min-height: 100px;
+  margin-right: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 8px;
+  background: #fff;
+  flex-shrink: 0;
+  padding: 5px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 /* 校徽图片 */
 .school-logo {
-  width: 100%;
-  height: 100%;
+  max-width: 100px;
+  max-height: 100px;
+  width: auto;
+  height: auto;
   object-fit: contain;
-  border-radius: 8px;
+  display: block;
+  margin: 0 auto;
 }
 
-/* 右侧文字内容区 */
-.edu-content {
-  flex: 1;
+/* 右侧内容区域 */
+.edu-right {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  margin-left: 20px;
   justify-content: center;
+}
+
+/* 时间样式 */
+.edu-period {
+  color: #666;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  white-space: nowrap;
+}
+
+/* 内容区域 */
+.edu-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 /* 学校名称 */
@@ -332,18 +328,18 @@ h3 {
   font-size: 18px;
   font-weight: bold;
   color: #2c3e50;
-  margin: 0 0 8px 0;
+  margin: 0 0 4px 0;
+  text-align: left;
 }
 
 /* 专业和学位 */
 .major,
 .degree {
-  font-size: 14px;
+  margin: 2px 0;
   color: #666;
-  margin: 4px 0;
+  font-size: 14px;
 }
 
-/* 教育详情样式 */
 .education-detail {
   padding: 20px;
 }
@@ -705,4 +701,223 @@ h3 {
 .skill-content strong {
   font-weight: 800;
   color: #2e5b87;
+}
+
+/* 项目经历列表样式 */
+.project-experience-section {
+  margin-bottom: 30px;
+}
+
+.project-experience-section h2 {
+  color: #2e5b87;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.project-item {
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  border: 1px solid #ddd;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.project-item.clickable:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #2e5b87;
+}
+
+.project-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.project-header h3 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 18px;
+}
+
+.project-time {
+  color: #666;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.brief {
+  margin: 5px 0 0 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* 项目详情样式 */
+.project-detail {
+  padding: 20px;
+}
+
+.project-detail h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 28px;
+}
+
+.project-detail h3 {
+  color: #2c3e50;
+  margin: 20px 0 10px;
+  font-size: 1.1em;
+}
+
+.project-period {
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.project-summary {
+  background-color: #f8f9fa;
+  padding: 15px;
+  border-left: 4px solid #42b983;
+  border-radius: 4px;
+  margin: 15px 0;
+}
+
+.project-details-section,
+.other-section {
+  margin: 20px 0;
+}
+
+.project-details-section ul,
+.other-section ul {
+  list-style-type: disc;
+  padding-left: 20px;
+  margin-top: 10px;
+}
+
+.project-details-section li,
+.other-section li {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+/* 媒体展示样式 */
+.media-section {
+  margin: 20px 0;
+}
+
+.video-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 20px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.project-video {
+  width: 100%;
+  height: auto;
+  max-height: 400px;
+  object-fit: contain;
+  display: block;
+}
+
+.image-container {
+  width: 100%;
+  max-width: 100%;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.project-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.media-description {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  margin-top: 10px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .project-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .project-time {
+    margin-top: 5px;
+    font-size: 14px;
+  }
+  
+  .project-detail h2 {
+    font-size: 24px;
+  }
+}
+
+/* 教育经历卡片头部横向布局 */
+.education-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.edu-logo {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-right: 8px;
+}
+
+.school-logo {
+  max-width: 36px;
+  max-height: 36px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  display: block;
+}
+
+.school-name {
+  flex: 1;
+  font-size: 18px;
+  font-weight: bold;
+  color: #2c3e50;
+  margin: 0 8px 0 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.edu-period {
+  color: #666;
+  font-size: 15px;
+  font-weight: bold;
+  white-space: nowrap;
+  margin-left: 8px;
+  min-width: 90px;
+  text-align: right;
 }

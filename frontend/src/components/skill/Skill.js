@@ -56,36 +56,9 @@ const Skill = ({ username, version }) => {
     }, []);
 
     /**
-     * 2. 加载后端数据，当 username 或 version 变化时触发
-     */
-    useEffect(() => {
-        if (username) {
-            fetchSkillContent(username, version);
-        }
-    }, [username, version]);
-
-    /**
-     * 3. 监听 content，每次变更后启动 10 秒自动保存
-     */
-    useEffect(() => {
-        // 如果已有定时器，则先清除
-        if (saveTimeout.current) {
-            clearTimeout(saveTimeout.current);
-        }
-
-        // 10 秒无变动后自动保存到数据库
-        saveTimeout.current = setTimeout(() => {
-            saveSkillContent();
-        }, 10000);
-
-        // 组件卸载或 content 改变前，清理当前定时器
-        return () => clearTimeout(saveTimeout.current);
-    }, [content, saveSkillContent]);
-
-    /**
      * 4. 从后端加载技能内容
      */
-    const fetchSkillContent = async (username, version) => {
+    const fetchSkillContent = useCallback(async (username, version) => {
         // 检查登录状态
         if (!isLoggedIn()) {
             console.log('用户未登录，跳过技能数据获取');
@@ -102,9 +75,14 @@ const Skill = ({ username, version }) => {
                 setContent(fetchedContent);
             }
         } catch (error) {
+            if (error.response && error.response.status === 404) {
+                // 404 表示没有数据，这是正常的，不需要报错
+                console.log('用户暂无技能数据');
+            } else {
             console.error('加载技能内容失败:', error);
+            }
         }
-    };
+    }, []);
 
     /**
      * 5. 自动保存技能内容到后端
@@ -127,6 +105,33 @@ const Skill = ({ username, version }) => {
             console.error('自动保存失败:', error);
         }
     }, [username, version]);
+
+    /**
+     * 2. 加载后端数据，当 username 或 version 变化时触发
+     */
+    useEffect(() => {
+        if (username) {
+            fetchSkillContent(username, version);
+        }
+    }, [username, version, fetchSkillContent]);
+
+    /**
+     * 3. 监听 content，每次变更后启动 10 秒自动保存
+     */
+    useEffect(() => {
+        // 如果已有定时器，则先清除
+        if (saveTimeout.current) {
+            clearTimeout(saveTimeout.current);
+        }
+
+        // 10 秒无变动后自动保存到数据库
+        saveTimeout.current = setTimeout(() => {
+            saveSkillContent();
+        }, 10000);
+
+        // 组件卸载或 content 改变前，清理当前定时器
+        return () => clearTimeout(saveTimeout.current);
+    }, [content, saveSkillContent]);
 
     return (
         <div className="skill-container">

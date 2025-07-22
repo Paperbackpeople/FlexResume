@@ -3,8 +3,8 @@ import {
   fetchPersonalInfo, 
   fetchEducationInfo, 
   fetchProjectInfo, 
-  fetchInternshipInfo, 
-  fetchSkillInfo 
+  fetchSkillInfo,
+  fetchWorkInternshipInfo
 } from '../utils/api';
 
 export const useResumeData = (username, version) => {
@@ -12,7 +12,7 @@ export const useResumeData = (username, version) => {
     personalInfo: null,
     education: null,
     projects: null,
-    internships: null,
+    workinternship: null,
     skills: null
   });
   const [loading, setLoading] = useState(true);
@@ -49,13 +49,13 @@ export const useResumeData = (username, version) => {
         personalInfo,
         education,
         projects,
-        internships,
+        workinternship,
         skills
       ] = await Promise.all([
         fetchPersonalInfo(username, version),
         fetchEducationInfo(username, version),
         fetchProjectInfo(username, version),
-        fetchInternshipInfo(username, version),
+        fetchWorkInternshipInfo(username, version),
         fetchSkillInfo(username, version)
       ]);
 
@@ -63,7 +63,7 @@ export const useResumeData = (username, version) => {
         personalInfo,
         education,
         projects,
-        internships,
+        workinternship,
         skills
       });
     } catch (err) {
@@ -108,13 +108,13 @@ export const useResumeData = (username, version) => {
           personalInfo,
           education,
           projects,
-          internships,
+          workinternship,
           skills
         ] = await Promise.all([
           fetchPersonalInfo(username, version),
           fetchEducationInfo(username, version),
           fetchProjectInfo(username, version),
-          fetchInternshipInfo(username, version),
+          fetchWorkInternshipInfo(username, version),
           fetchSkillInfo(username, version)
         ]);
 
@@ -123,7 +123,7 @@ export const useResumeData = (username, version) => {
             personalInfo,
             education,
             projects,
-            internships,
+            workinternship,
             skills
           };
 
@@ -132,7 +132,7 @@ export const useResumeData = (username, version) => {
             JSON.stringify(prevData.personalInfo) !== JSON.stringify(newData.personalInfo) ||
             JSON.stringify(prevData.education) !== JSON.stringify(newData.education) ||
             JSON.stringify(prevData.projects) !== JSON.stringify(newData.projects) ||
-            JSON.stringify(prevData.internships) !== JSON.stringify(newData.internships) ||
+            JSON.stringify(prevData.workinternship) !== JSON.stringify(newData.workinternship) ||
             JSON.stringify(prevData.skills) !== JSON.stringify(newData.skills);
           
           if (hasChanged) {

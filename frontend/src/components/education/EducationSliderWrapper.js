@@ -20,58 +20,8 @@ function EducationSliderWapper({ username, version }) {
         return !!(token && userId);
     };
 
-    // --------------------------
-    // 1. 加载时, fetch 已有数据
-    // --------------------------
-    useEffect(() => {
-        async function fetchData() {
-            // 检查登录状态
-            if (!isLoggedIn()) {
-                console.log('用户未登录，跳过教育数据获取');
-                return;
-            }
-
-            try {
-                const res = await axios.get('/api/education-info', { params: { username, version }});
-                const doc = res.data;  // doc 就是单个对象
-                if (doc && doc.education) {
-                    const eduObj = doc.education; // {education1: {...}, education2: {...}}
-                    const newList = Object.keys(eduObj).map((key, idx) => ({ id: idx }));
-                    setEducationList(newList);
-                    setEducationData(eduObj);
-                } else {
-                    setEducationList([{ id: 0 }]);
-                    setEducationData({});
-                }
-            } catch (error) {
-                console.error("Error fetching education data:", error);
-            }
-        }
-
-        if (username && version) {
-            fetchData();
-        }
-    }, [username, version]);
-
-    // --------------------------
-    // 2. 监听 educationData, 10秒后自动保存
-    // --------------------------
-    useEffect(() => {
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-        saveTimeoutRef.current = setTimeout(() => {
-            saveAllEducationData();
-        }, 10000);
-
-        return () => clearTimeout(saveTimeoutRef.current);
-    }, [educationData, saveAllEducationData]);
-
-    // --------------------------
-    // 3. 统一保存函数
-    // --------------------------
+    // 判断是否有有效数据：字段非空或数组字段非空
     const isValidEducationData = (dataObj) => {
-        // 判断是否有有效数据：字段非空或数组字段非空
         return Object.values(dataObj).some((fieldValue) => {
             if (Array.isArray(fieldValue)) {
                 return fieldValue.some((item) =>
@@ -82,6 +32,7 @@ function EducationSliderWapper({ username, version }) {
         });
     };
 
+    // 统一保存函数
     const saveAllEducationData = useCallback(async () => {
         // 检查登录状态
         if (!isLoggedIn()) {
@@ -116,6 +67,58 @@ function EducationSliderWapper({ username, version }) {
             console.error('保存教育信息时出错:', error);
         }
     }, [educationData, username, version]);
+
+    // --------------------------
+    // 1. 加载时, fetch 已有数据
+    // --------------------------
+    useEffect(() => {
+        async function fetchData() {
+            // 检查登录状态
+            if (!isLoggedIn()) {
+                console.log('用户未登录，跳过教育数据获取');
+                return;
+            }
+
+            try {
+                const res = await axios.get('/api/education-info', { params: { username, version }});
+                const doc = res.data;  // doc 就是单个对象
+                if (doc && doc.education) {
+                    const eduObj = doc.education; // {education1: {...}, education2: {...}}
+                    const newList = Object.keys(eduObj).map((key, idx) => ({ id: idx }));
+                    setEducationList(newList);
+                    setEducationData(eduObj);
+                } else {
+                    setEducationList([{ id: 0 }]);
+                    setEducationData({});
+                }
+            } catch (error) {
+                if (error.response && error.response.status === 404) {
+                    // 404 表示没有数据，这是正常的，不需要报错
+                    console.log('用户暂无教育经历数据');
+                } else {
+                    console.error("Error fetching education data:", error);
+                }
+            }
+        }
+
+        if (username && version) {
+            fetchData();
+        }
+    }, [username, version]);
+
+    // --------------------------
+    // 2. 监听 educationData, 10秒后自动保存
+    // --------------------------
+    useEffect(() => {
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+        }
+        saveTimeoutRef.current = setTimeout(() => {
+            saveAllEducationData();
+        }, 10000);
+
+        return () => clearTimeout(saveTimeoutRef.current);
+    }, [educationData, saveAllEducationData]);
 
     // --------------------------
     // 4. 子组件 -> 父组件

@@ -2,7 +2,10 @@ import React from 'react';
 import './Resume.css';
 
 const Skills = ({ skillData }) => {
-  console.log('Skills skillData:', skillData); // 调试信息
+  if (process.env.NODE_ENV === 'development' && window.__SKILL_LOGGED__ !== skillData?.id) {
+    console.log('Skills skillData:', skillData);
+    window.__SKILL_LOGGED__ = skillData?.id;
+  }
   
   if (!skillData || !skillData.content) {
     return (

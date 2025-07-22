@@ -2,38 +2,43 @@ import React, { useState } from 'react';
 import PersonalInfo from './PersonalInfo';
 import Education from './Education';
 import ProjectExperience from './ProjectExperience';
-import InternshipExperience from './InternshipExperience';
 import Skills from './Skills';
 import EducationDetail from './EducationDetail';
 import ProjectDetail from './ProjectDetail';
-import InternshipDetail from './InternshipDetail';
+import WorkInternshipExperience from './WorkInternshipExperience';
+import WorkInternshipDetail from './WorkInternshipDetail';
 import { useResumeData } from '../../hooks/useResumeData';
 import './Resume.css';
 
-const ResumePreview = ({ username, version }) => {
-  // 使用自定义hook获取简历数据
-  const { resumeData, loading, error, refreshData, isRefreshing } = useResumeData(username, version);
+const ResumePreview = ({ username, version, isPublishMode, snapshot }) => {
+  // 始终调用 useResumeData
+  const resumeDataHook = useResumeData(username, version);
+
+  // 根据 snapshot 是否存在决定用哪个数据
+  const resumeData = snapshot ? snapshot : resumeDataHook.resumeData;
+  const loading = snapshot ? false : resumeDataHook.loading;
+  const error = snapshot ? null : resumeDataHook.error;
+  const refreshData = snapshot ? undefined : resumeDataHook.refreshData;
+  const isRefreshing = snapshot ? false : resumeDataHook.isRefreshing;
   
   // 详情面板状态
   const [showDetail, setShowDetail] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [currentEducationId, setCurrentEducationId] = useState(null);
   const [currentProjectId, setCurrentProjectId] = useState(null);
-  const [currentInternshipId, setCurrentInternshipId] = useState(null);
+  const [currentWorkId, setCurrentWorkId] = useState(null);
+  const DETAIL_ANIMATION_DURATION = 500; // ms，和CSS动画一致
+  // 新增：用于缓存待打开的 detail
+  const [pendingDetail, setPendingDetail] = useState(null);
 
   // 处理教育详情
   const handleEducationClick = (education) => {
     if (showDetail) {
+      setPendingDetail({ type: 'education', id: education.id });
       handleDetailClose();
-      setTimeout(() => {
-        setCurrentProjectId(null);
-        setCurrentInternshipId(null);
-        setCurrentEducationId(education.id);
-        setShowDetail(true);
-      }, 300);
     } else {
       setCurrentProjectId(null);
-      setCurrentInternshipId(null);
+      setCurrentWorkId(null);
       setCurrentEducationId(education.id);
       setShowDetail(true);
     }
@@ -42,35 +47,25 @@ const ResumePreview = ({ username, version }) => {
   // 处理项目详情
   const handleProjectClick = (project) => {
     if (showDetail) {
+      setPendingDetail({ type: 'project', id: project.id });
       handleDetailClose();
-      setTimeout(() => {
-        setCurrentEducationId(null);
-        setCurrentInternshipId(null);
-        setCurrentProjectId(project.id);
-        setShowDetail(true);
-      }, 300);
     } else {
       setCurrentEducationId(null);
-      setCurrentInternshipId(null);
+      setCurrentWorkId(null);
       setCurrentProjectId(project.id);
       setShowDetail(true);
     }
   };
 
-  // 处理实习详情
-  const handleInternshipClick = (internship) => {
+  // 处理工作经历详情
+  const handleWorkClick = (work) => {
     if (showDetail) {
+      setPendingDetail({ type: 'work', id: work.id });
       handleDetailClose();
-      setTimeout(() => {
-        setCurrentProjectId(null);
-        setCurrentEducationId(null);
-        setCurrentInternshipId(internship.id);
-        setShowDetail(true);
-      }, 300);
     } else {
-      setCurrentProjectId(null);
       setCurrentEducationId(null);
-      setCurrentInternshipId(internship.id);
+      setCurrentProjectId(null);
+      setCurrentWorkId(work.id);
       setShowDetail(true);
     }
   };
@@ -78,14 +73,27 @@ const ResumePreview = ({ username, version }) => {
   // 修改关闭详情面板函数
   const handleDetailClose = () => {
     setIsClosing(true);
-    // 等待淡出动画完成后再清除状态
     setTimeout(() => {
       setShowDetail(false);
       setCurrentProjectId(null);
       setCurrentEducationId(null);
-      setCurrentInternshipId(null);
+      setCurrentWorkId(null);
       setIsClosing(false);
-    }, 500); // 与CSS动画时长一致
+      // 动画结束后，如果有待打开的 detail，则自动打开
+      if (pendingDetail) {
+        if (pendingDetail.type === 'education') {
+          setCurrentEducationId(pendingDetail.id);
+          setShowDetail(true);
+        } else if (pendingDetail.type === 'project') {
+          setCurrentProjectId(pendingDetail.id);
+          setShowDetail(true);
+        } else if (pendingDetail.type === 'work') {
+          setCurrentWorkId(pendingDetail.id);
+          setShowDetail(true);
+        }
+        setPendingDetail(null);
+      }
+    }, DETAIL_ANIMATION_DURATION);
   };
 
   // 处理刷新按钮点击
@@ -112,11 +120,12 @@ const ResumePreview = ({ username, version }) => {
   }
 
   return (
-  <div className={`resume-preview-container ${showDetail ? 'show-detail' : ''}`}>
-          <div className="resume-container">
-        <div className="resume">
-          <div className="resume-header">
-            <h1>个人简历</h1>
+  <div className={`resume-preview-container ${showDetail ? 'show-detail' : ''}`} style={{ position: 'relative' }}>
+    <div className="resume-container">
+      <div className="resume">
+        <div className="resume-header">
+          <h1>个人简历</h1>
+          {!isPublishMode && (
             <button 
               className={`refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
               onClick={handleRefreshClick}
@@ -125,7 +134,8 @@ const ResumePreview = ({ username, version }) => {
             >
               {isRefreshing ? '⏳' : '🔄'}
             </button>
-          </div>
+          )}
+        </div>
         
         <PersonalInfo personalInfo={resumeData.personalInfo} />
         
@@ -134,9 +144,9 @@ const ResumePreview = ({ username, version }) => {
           onEducationClick={handleEducationClick}
         />
         
-        <InternshipExperience 
-          internshipData={resumeData.internships} 
-          onInternshipClick={handleInternshipClick}
+        <WorkInternshipExperience 
+          workData={resumeData.workinternship} 
+          onWorkClick={handleWorkClick}
         />
         
         <ProjectExperience 
@@ -163,18 +173,18 @@ const ResumePreview = ({ username, version }) => {
             />
           )}
           
-          {currentInternshipId && (
-            <InternshipDetail
-              internshipId={currentInternshipId}
-              internshipData={resumeData.internships}
-              onClose={handleDetailClose}
-            />
-          )}
-          
           {currentProjectId && (
             <ProjectDetail
               projectId={currentProjectId}
               projectData={resumeData.projects}
+              onClose={handleDetailClose}
+            />
+          )}
+
+          {currentWorkId && (
+            <WorkInternshipDetail
+              workId={currentWorkId}
+              workData={resumeData.workinternship}
               onClose={handleDetailClose}
             />
           )}

@@ -1,0 +1,225 @@
+/* 发布页面专用样式 - 模仿Vue项目 */
+.publish-view-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    min-height: 100vh;
+  }
+  
+  /* PC端布局 - 覆盖Resume.css的样式 */
+  @media (min-width: 769px) {
+    .publish-view-wrapper {
+      padding: 0;
+    }
+    
+    /* 覆盖简历预览容器 */
+    .publish-view-wrapper .resume-preview-container {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100vh !important;
+      overflow: hidden !important;
+    }
+    
+    /* 覆盖简历容器 */
+    .publish-view-wrapper .resume-container {
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      width: 100% !important;
+      height: 100vh !important;
+      padding: 20px !important;
+      overflow-y: auto !important;
+      background: #fff !important;
+    }
+    
+    /* 覆盖简历主体 */
+    .publish-view-wrapper .resume {
+      transition: all 0.5s ease !important;
+      max-width: 800px !important;
+      margin: 0 auto !important;
+      background: #fff !important;
+      padding: 20px !important;
+      border-radius: 10px !important;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.1) !important;
+    }
+    
+    /* 当显示详情时，简历左移 - 覆盖原有样式 */
+    .publish-view-wrapper .show-detail .resume {
+      transform: translateX(-60%) !important;
+      max-width: 40% !important;
+    }
+    
+    /* 覆盖详情面板样式 */
+    .publish-view-wrapper .detail-panel {
+      position: fixed !important;
+      right: 0 !important;
+      top: 0 !important;
+      width: 50% !important;
+      height: 100vh !important;
+      background: #fff !important;
+      padding: 20px !important;
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1) !important;
+      overflow-y: auto !important;
+      box-sizing: border-box !important;
+      border-left: 1px solid #ccc !important;
+      
+      /* 移除原有的transform和opacity */
+      opacity: 1 !important;
+      transform: none !important;
+      
+      /* 动画 */
+      transition: none !important;
+      animation: none !important;
+    }
+    
+    /* 自定义进入动画 */
+    .publish-view-wrapper .detail-panel.slide-enter {
+      animation: publishSlideIn 0.5s ease forwards !important;
+    }
+    
+    /* 自定义离开动画 */
+    .publish-view-wrapper .detail-panel.slide-leave {
+      animation: publishSlideOut 0.5s ease forwards !important;
+    }
+    
+    /* 禁用原有的遮罩效果 */
+    .publish-view-wrapper .show-detail .resume-container::after {
+      display: none !important;
+    }
+  }
+  
+  /* 定义发布页面专用动画 */
+  @keyframes publishSlideIn {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes publishSlideOut {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+  }
+  
+  /* 移动端布局 */
+  @media (max-width: 768px) {
+    .publish-view-wrapper {
+      padding: 10px;
+    }
+    
+    /* 移动端简历容器 */
+    .publish-view-wrapper .resume-container {
+      position: static !important;
+      width: 100% !important;
+      height: auto !important;
+      padding: 10px !important;
+      margin-bottom: 20px !important;
+      box-shadow: none !important;
+    }
+    
+    .publish-view-wrapper .resume {
+      max-width: 100% !important;
+      margin: 0 auto !important;
+      transform: none !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      padding: 10px !important;
+    }
+    
+    /* 移动端不需要左移效果 */
+    .publish-view-wrapper .show-detail .resume {
+      transform: none !important;
+      max-width: 100% !important;
+    }
+    
+    /* 移动端详情面板全屏覆盖 */
+    .publish-view-wrapper .detail-panel {
+      position: fixed !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      height: 100vh !important;
+      margin: 0 !important;
+      box-shadow: none !important;
+      border: none !important;
+      background: #fff !important;
+      z-index: 999 !important;
+      overflow-y: auto !important;
+      padding: 20px !important;
+    }
+    
+    /* 移动端关闭按钮位置 */
+    .publish-view-wrapper .close-btn {
+      position: fixed !important;
+      top: 20px !important;
+      right: 20px !important;
+    }
+  }
+  
+  /* 优化滚动条样式 */
+  .publish-view-wrapper .resume-container::-webkit-scrollbar,
+  .publish-view-wrapper .detail-panel::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .publish-view-wrapper .resume-container::-webkit-scrollbar-thumb,
+  .publish-view-wrapper .detail-panel::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 3px;
+  }
+  
+  .publish-view-wrapper .resume-container::-webkit-scrollbar-track,
+  .publish-view-wrapper .detail-panel::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  /* 详情内容样式 */
+  .publish-view-wrapper .detail-content {
+    padding: 40px 20px;
+  }
+  
+  /* 视频容器 */
+  .publish-view-wrapper .video-container {
+    margin: 20px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+  
+  .publish-view-wrapper .project-video {
+    width: 100%;
+    max-width: 100%;
+    display: block;
+  }
+  
+  /* 响应式字体调整 */
+  @media (max-width: 768px) {
+    .publish-view-wrapper h1 {
+      font-size: 2rem;
+    }
+    
+    .publish-view-wrapper h2 {
+      font-size: 1.2rem;
+    }
+    
+    .publish-view-wrapper h3 {
+      font-size: 1rem;
+    }
+    
+    .publish-view-wrapper .detail-content {
+      padding-top: 60px;
+    }
+  }

@@ -2,13 +2,13 @@ import React, {useEffect, useState} from 'react';
 import 'quill/dist/quill.snow.css'; // 引入 Quill 样式
 import PersonalInfo from './components/personalInfo/PersonalInfo';
 import ProjectSliderWrapper from './components/project/ProjectSliderWrapper';
-import EducationSliderWapper from './components/education/ EducationSliderWrapper';
-import InternshipSliderWrapper from './components/internship/InternshipSliderWrapper';
-import WorkExperienceSliderWrapper from './components/workexperience/WorkExperienceSliderWrapper';
+import EducationSliderWapper from './components/education/EducationSliderWrapper';
 import Skill from './components/skill/Skill';
 import ResumePreview from './components/resume/ResumePreview';
 import ErrorBoundary from './components/resume/ErrorBoundary';
 import LoginModal from './components/LoginModal';
+import WorkInternshipSliderWrapper from './components/workinternship/WorkInternshipSliderWrapper';
+import { useResumeData } from './hooks/useResumeData';
 
 import './App.css';
 
@@ -17,7 +17,7 @@ function App() {
     const [username, setUsername] = useState('');
     const [version, setVersion] = useState(1);
     const [isSmallScreen, setIsSmallScreen] = useState(false);
-    const [isLogin, setIsLogin] = useState(!!localStorage.getItem('token'));
+    const [isLogin, setIsLogin] = useState(false);
 
     // 动态检测屏幕大小
     useEffect(() => {
@@ -67,6 +67,8 @@ function App() {
         }
     }, []);
 
+    const resumeDataHook = useResumeData(username, version);
+
     return (
         <div className="container">
             <div className="App">
@@ -77,9 +79,8 @@ function App() {
                             {name: 'Personal Info', icon: 'fa-user'},
                             {name: 'Education', icon: 'fa-graduation-cap'},
                             {name: 'Project', icon: 'fa-code'},
-                            {name: 'Internship', icon: 'fa-building'},
-                            {name: 'Work', icon: 'fa-briefcase'},
-                            {name: 'Skills', icon: 'fa-lightbulb'}
+                            {name: 'Work Xperience', icon: 'fa-briefcase'}
+                            ,{name: 'Skills', icon: 'fa-lightbulb'}
                         ].map((section, index) => (
                             <li
                                 key={section.name}
@@ -104,11 +105,8 @@ function App() {
                     <div className={`section ${activeSection === 'Project' ? 'is-visible' : 'is-hidden'}`}>
                         <ProjectSliderWrapper username={username} version={version} />
                     </div>
-                    <div className={`section ${activeSection === 'Internship' ? 'is-visible' : 'is-hidden'}`}>
-                        <InternshipSliderWrapper username={username} version={version} />
-                    </div>
-                    <div className={`section ${activeSection === 'Work' ? 'is-visible' : 'is-hidden'}`}>
-                        <WorkExperienceSliderWrapper username={username} version={version} />
+                        <div className={`section ${activeSection === 'Work Xperience' ? 'is-visible' : 'is-hidden'}`}>
+                        <WorkInternshipSliderWrapper username={username} version={version} />
                     </div>
                     <div className={`section ${activeSection === 'Skills' ? 'is-visible' : 'is-hidden'}`}>
                         <Skill username={username} version={version}/>
@@ -131,8 +129,36 @@ function App() {
 
             {!isSmallScreen ? (
                 isLogin ? (
-                    <div className="preview">
+                    <div className="preview" style={{ position: 'relative' }}>
                         <h1>Preview</h1>
+                        {/* 发布按钮放在 preview 区域右上角 */}
+                        <button
+                          className="publish-btn"
+                          onClick={async () => {
+                            const id = username || localStorage.getItem('userId');
+                            const version = 1;
+                            // 收集所有简历数据
+                            const snapshot = resumeDataHook.resumeData;
+                            try {
+                              const res = await fetch('/api/publish', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ userId: id, version, snapshot }),
+                              });
+                              const data = await res.json();
+                              if (res.ok) {
+                                alert('发布成功！');
+                                window.open(`/publish/${id}`, '_blank');
+                              } else {
+                                alert(data.message || '发布失败');
+                              }
+                            } catch (e) {
+                              alert('网络错误，发布失败');
+                            }
+                          }}
+                        >
+                          发布
+                        </button>
                         <ErrorBoundary>
                         <ResumePreview username={username} version={version} />
                         </ErrorBoundary>

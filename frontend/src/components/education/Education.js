@@ -192,9 +192,10 @@ const Education = ({ index, isLast, addEducation, removeEducation, onChange, ini
                                             src={educationInfo.logo}
                                             alt="Uploaded"
                                             className="logo-preview"
+                                            style={{ maxWidth: 100, maxHeight: 100, width: 'auto', height: 'auto', objectFit: 'contain' }}
                                         />
                                     ) : (
-                                        <div className="logo-placeholder">Click to Upload</div>
+                                        <div className="logo-placeholder">上传校徽</div>
                                     )}
                                 </div>
                                 <input
@@ -218,9 +219,12 @@ const Education = ({ index, isLast, addEducation, removeEducation, onChange, ini
                                     onChange={(e) => handleCourseChange(cIndex, 'name', e.target.value)}
                                     className="info-input"
                                 />
+                                {/* 只有最后一行有加号 */}
+                                {cIndex === educationInfo.courses.length - 1 && (
                                 <button onClick={addCourse} className="add-button">
                                     +
                                 </button>
+                                )}
                                 <button onClick={() => removeCourse(cIndex)} className="remove-button">
                                     -
                                 </button>
@@ -245,9 +249,12 @@ const Education = ({ index, isLast, addEducation, removeEducation, onChange, ini
                                     onChange={(e) => handleAwardChange(aIndex, 'name', e.target.value)}
                                     className="info-input"
                                 />
+                                {/* 只有最后一行有加号 */}
+                                {aIndex === educationInfo.awards.length - 1 && (
                                 <button onClick={addAward} className="add-button">
                                     +
                                 </button>
+                                )}
                                 <button
                                     onClick={() => removeAward(aIndex)}
                                     className="remove-button"

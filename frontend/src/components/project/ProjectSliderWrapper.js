@@ -59,23 +59,18 @@ function ProjectSliderWrapper({ username, version }) {
           setAllProjectData({});
         }
       } catch (err) {
-        console.error('fetch project error:', err);
+        if (process.env.NODE_ENV === 'development') {
+          if (err.response && err.response.status === 404) {
+            // 仅开发环境下可选打印
+            // console.log('用户暂无项目经历数据');
+          } else {
+            console.error('fetch project error:', err);
+          }
+        }
       }
     }
     fetchProjectData();
   }, [username, version]);
-
-  // 2. 当 allProjectData 改变后，10秒后自动保存
-  useEffect(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    saveTimeoutRef.current = setTimeout(() => {
-      saveAllProjects();
-    }, 10000);
-
-    return () => clearTimeout(saveTimeoutRef.current);
-  }, [allProjectData, saveAllProjects]);
 
   // 判断卡片是否为空（至少有一个字段非空即认为有效）
   const isValidProjectData = (dataObj) => {
@@ -120,6 +115,18 @@ function ProjectSliderWrapper({ username, version }) {
     }
   }, [allProjectData, username, version]);
 
+  // 2. 当 allProjectData 改变后，10秒后自动保存
+  useEffect(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    saveTimeoutRef.current = setTimeout(() => {
+      saveAllProjects();
+    }, 10000);
+
+    return () => clearTimeout(saveTimeoutRef.current);
+  }, [allProjectData, saveAllProjects]);
+
   // 4. 新增/删除项目
   const addProject = () => {
     setProjectList((prev) => {
@@ -135,20 +142,21 @@ function ProjectSliderWrapper({ username, version }) {
     setProjectList((prev) => {
       if (prev.length === 1) return prev; // 保证至少1卡
       const newList = prev.filter((_, idx) => idx !== removeIndex);
-
-      // 调整 currentIndex
       setCurrentIndex((prevIndex) =>
           prevIndex >= removeIndex ? Math.max(0, prevIndex - 1) : prevIndex
       );
-      return newList;
+      // 重新编号，保证 key 连续
+      return newList.map((_, idx) => ({ id: `project${idx}` }));
     });
 
-    // 同时删除 allProjectData 的对应字段
     setAllProjectData((prev) => {
-      const copy = { ...prev };
-      const keyToDelete = `project${removeIndex}`;
-      delete copy[keyToDelete];
-      return copy;
+      // 重新整理 key，保证 key 连续
+      const values = Object.values(prev).filter((_, idx) => idx !== removeIndex);
+      const newData = {};
+      values.forEach((v, idx) => {
+        newData[`project${idx}`] = v;
+      });
+      return newData;
     });
   };
 

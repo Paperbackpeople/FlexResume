@@ -5,17 +5,7 @@ export const transformProjectData = (projectData) => {
   if (!projectData || !projectData.projectData) {
     return null;
   }
-
-  return projectData; // 直接返回原始数据，让组件处理
-};
-
-// 转换实习数据
-export const transformInternshipData = (internshipData) => {
-  if (!internshipData || !internshipData.internshipData) {
-    return null;
-  }
-
-  return internshipData; // 直接返回原始数据，让组件处理
+  return projectData.projectData; // 只返回真正的项目数据对象
 };
 
 // 转换教育数据

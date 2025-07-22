@@ -1,6 +1,15 @@
 import React from 'react';
 import './Resume.css';
 
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  if (isNaN(d)) return '';
+  const year = d.getFullYear();
+  const month = d.getMonth() + 1;
+  return `${year}.${month.toString().padStart(2, '0')}`;
+}
+
 const Education = ({ educationData, onEducationClick }) => {
   if (!educationData || !educationData.education) {
     return (
@@ -28,27 +37,32 @@ const Education = ({ educationData, onEducationClick }) => {
             className="education-item clickable"
             onClick={() => onEducationClick(edu)}
           >
-            {/* 左侧容器：时间 + 校徽 */}
-            <div className="edu-left">
-              <div className="edu-period">
-                {edu.startDate ? new Date(edu.startDate).getFullYear() : ''} - {edu.graduationYear ? new Date(edu.graduationYear).getFullYear() : ''}
-              </div>
-              {edu.logo && (
-                <div className="edu-logo">
-                  <img 
-                    src={edu.logo} 
-                    alt="school logo"
-                    className="school-logo"
-                  />
-                </div>
-              )}
+            {/* 左侧校徽 */}
+            <div className="edu-logo">
+              {edu.logo ? (
+                <img 
+                  src={edu.logo} 
+                  alt={`${edu.school} logo`}
+                  className="school-logo"
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+              ) : null}
             </div>
-
-            {/* 右侧文字内容区 */}
-            <div className="edu-content">
-              <h3 className="school-name">{edu.school}</h3>
-              <p className="major">专业: {edu.fieldOfStudy}</p>
-              <p className="degree">学位: {edu.degree}</p>
+            
+            {/* 右侧内容 */}
+            <div className="edu-right">
+              <div className="edu-header-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                <h3 className="school-name" style={{ margin: 0 }}>{edu.school}</h3>
+                <span className="edu-period">
+                  {edu.startDate ? formatDate(edu.startDate) : ''} - {edu.graduationYear ? formatDate(edu.graduationYear) : '至今'}
+                </span>
+              </div>
+              <div className="edu-content">
+                <p className="major">专业: {edu.fieldOfStudy}</p>
+                <p className="degree">学位: {edu.degree}</p>
+              </div>
             </div>
           </div>
         ))}

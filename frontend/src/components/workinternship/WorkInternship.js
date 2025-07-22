@@ -1,23 +1,25 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import './Project.css';
+import './WorkInternship.css';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 
-function Project({
+function WorkInternship({
   itemId,
   index,
   isLast,
-  addProject,
-  removeProject,
+  addWorkInternship,
+  removeWorkInternship,
   onChange,
   initialData,
 }) {
-  /* ========== 1. 本地 state ========== */
-  const [projectInfo, setProjectInfo] = useState({
+  // 类型：实习/正式工作
+  const [type, setType] = useState(initialData?.type || 'work');
+  const [info, setInfo] = useState({
     time: '',
-    name: '',
+    company: '',
+    position: '',
     summary: '',
-    detailTitle: '项目详情',
+    detailTitle: '工作/实习详情',
     detailContent: '',
     mediaType: '',
     mediaFile: null,
@@ -25,48 +27,36 @@ function Project({
     mediaDescription: '',
     otherTitle: '其他内容',
     otherContent: '',
+    ...initialData
   });
-
-  const steps = ['基本信息', '项目详情', '媒体上传', '其他内容'];
+  const steps = ['基本信息', '详情', '媒体上传', '其他内容'];
   const [activeStep, setActiveStep] = useState(0);
-  
-  // 添加标志位，防止循环更新
   const isUpdatingFromParent = useRef(false);
 
-  /* 初始数据同步 */
   useEffect(() => {
     if (initialData) {
       isUpdatingFromParent.current = true;
-      setProjectInfo(prev => ({ ...prev, ...initialData }));
-      // 在下一个事件循环中重置标志
-      setTimeout(() => {
-        isUpdatingFromParent.current = false;
-      }, 0);
+      setInfo(prev => ({ ...prev, ...initialData }));
+      setType(initialData.type || 'work');
+      setTimeout(() => { isUpdatingFromParent.current = false; }, 0);
     }
   }, [initialData]);
 
-  /* ========== 2. Quill 配置 ========== */
+  // Quill 编辑器
   const detailQuillRef = useRef(null);
   const otherQuillRef = useRef(null);
   const detailEditorId = `detailEditor-${itemId}`;
   const otherEditorId = `otherEditor-${itemId}`;
 
-  // Quill 更新处理
   const handleQuillChange = useCallback((key, htmlValue) => {
-    // 如果是从父组件更新的，不要触发 onChange
     if (isUpdatingFromParent.current) return;
-    
-    setProjectInfo(prev => {
+    setInfo(prev => {
       const updated = { ...prev, [key]: htmlValue };
-      // 使用 setTimeout 避免在渲染期间更新父组件
-      setTimeout(() => {
-        onChange?.(itemId, updated);
-      }, 0);
+      setTimeout(() => { onChange?.(itemId, { ...updated, type }); }, 0);
       return updated;
     });
-  }, [itemId, onChange]);
+  }, [itemId, onChange, type]);
 
-  // 初始化 Quill
   useEffect(() => {
     const quillOptions = {
       theme: 'snow',
@@ -79,26 +69,18 @@ function Project({
         ],
       },
     };
-
-    // 初始化详情编辑器
     if (!detailQuillRef.current && document.getElementById(detailEditorId)) {
       detailQuillRef.current = new Quill(`#${detailEditorId}`, quillOptions);
-      
       detailQuillRef.current.on('text-change', (delta, oldDelta, source) => {
-        // 只处理用户输入，忽略程序设置的内容
         if (source === 'user') {
           const html = detailQuillRef.current.root.innerHTML;
           handleQuillChange('detailContent', html);
         }
       });
     }
-
-    // 初始化其他内容编辑器
     if (!otherQuillRef.current && document.getElementById(otherEditorId)) {
       otherQuillRef.current = new Quill(`#${otherEditorId}`, quillOptions);
-      
       otherQuillRef.current.on('text-change', (delta, oldDelta, source) => {
-        // 只处理用户输入
         if (source === 'user') {
           const html = otherQuillRef.current.root.innerHTML;
           handleQuillChange('otherContent', html);
@@ -107,7 +89,6 @@ function Project({
     }
   }, [detailEditorId, otherEditorId, handleQuillChange]);
 
-  // 单独处理 Quill 内容更新
   useEffect(() => {
     if (!initialData) return;
     // detailContent
@@ -124,20 +105,16 @@ function Project({
     }
   }, [initialData]);
 
-  /* ========== 3. 通用字段修改 ========== */
-  const updateProjectField = (key, value) => {
-    setProjectInfo(prev => {
+  const updateField = (key, value) => {
+    setInfo(prev => {
       const updated = { ...prev, [key]: value };
-      setTimeout(() => {
-        onChange?.(itemId, updated);
-      }, 0);
+      setTimeout(() => { onChange?.(itemId, { ...updated, type }); }, 0);
       return updated;
     });
   };
 
   const handleInputChange = (key, value) => {
-    updateProjectField(key, value);
-
+    updateField(key, value);
     if (key === 'detailTitle') {
       const el = document.getElementById(`detailLabel-${itemId}`);
       if (el) el.textContent = value;
@@ -148,7 +125,7 @@ function Project({
     }
   };
 
-  /* ========== 4. 媒体上传（保持原有代码） ========== */
+  // 媒体上传与 Project.js 保持一致
   const compressImage = (file) => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -158,10 +135,8 @@ function Project({
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
-          
           const maxWidth = 1024;
           const maxHeight = 1024;
-          
           if (width > height) {
             if (width > maxWidth) {
               height = Math.round((height * maxWidth) / width);
@@ -173,13 +148,10 @@ function Project({
               height = maxHeight;
             }
           }
-          
           canvas.width = width;
           canvas.height = height;
-          
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
-          
           canvas.toBlob((blob) => {
             if (blob) {
               resolve(blob);
@@ -199,15 +171,13 @@ function Project({
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     if (file.type.includes('image')) {
       try {
         const compressedBlob = await compressImage(file);
         const fileObj = new File([compressedBlob], file.name, { type: 'image/jpeg' });
-        
         const reader = new FileReader();
         reader.onload = () => {
-          setProjectInfo(prev => {
+          setInfo(prev => {
             const updated = {
               ...prev,
               mediaType: 'image',
@@ -215,15 +185,12 @@ function Project({
               mediaPreview: reader.result,
               mediaDescription: ''
             };
-            setTimeout(() => {
-              onChange?.(itemId, updated);
-            }, 0);
+            setTimeout(() => { onChange?.(itemId, { ...updated, type }); }, 0);
             return updated;
           });
         };
         reader.readAsDataURL(compressedBlob);
       } catch (error) {
-        console.error('图片压缩失败:', error);
         alert('图片处理失败，请重试');
       }
     } else if (file.type.includes('video')) {
@@ -232,10 +199,9 @@ function Project({
         alert('视频文件大小不能超过 10MB');
         return;
       }
-      
       const reader = new FileReader();
       reader.onload = () => {
-        setProjectInfo(prev => {
+        setInfo(prev => {
           const updated = {
             ...prev,
             mediaType: 'video',
@@ -243,9 +209,7 @@ function Project({
             mediaPreview: reader.result,
             mediaDescription: ''
           };
-          setTimeout(() => {
-            onChange?.(itemId, updated);
-          }, 0);
+          setTimeout(() => { onChange?.(itemId, { ...updated, type }); }, 0);
           return updated;
         });
       };
@@ -257,7 +221,7 @@ function Project({
   };
 
   const removeMedia = () => {
-    setProjectInfo(prev => {
+    setInfo(prev => {
       const updated = {
         ...prev,
         mediaType: '',
@@ -265,169 +229,108 @@ function Project({
         mediaPreview: null,
         mediaDescription: ''
       };
-      setTimeout(() => {
-        onChange?.(itemId, updated);
-      }, 0);
+      setTimeout(() => { onChange?.(itemId, { ...updated, type }); }, 0);
       return updated;
     });
   };
 
-  /* ========== 5. 组件 UI ========== */
   return (
     <div className="project-container">
       <div className="project-section">
         {/* 顶栏 */}
         <div className="section-header">
-          <h2>Project {index + 1}</h2>
+          <h2>{type === 'internship' ? '实习' : '工作'} {index + 1}</h2>
           <div className="button-group">
-            <button className="remove-newButton" onClick={removeProject}>-</button>
+            <button className="remove-newButton" onClick={removeWorkInternship}>-</button>
             {isLast && (
-              <button className="add-newButton" onClick={addProject}>+</button>
+              <button className="add-newButton" onClick={addWorkInternship}>+</button>
             )}
           </div>
         </div>
-
+        {/* 类型选择 */}
+        <div className="input-row">
+          <label className="label label-required">类型</label>
+          <select
+            className="info-input"
+            value={type}
+            onChange={e => {
+              setType(e.target.value);
+              setInfo(prev => {
+                const updated = { ...prev, type: e.target.value };
+                setTimeout(() => { onChange?.(itemId, updated); }, 0);
+                return updated;
+              });
+            }}
+          >
+            <option value="work">正式工作</option>
+            <option value="internship">实习</option>
+          </select>
+        </div>
         {/* 步骤条 */}
         <ul className="stepper" style={{ marginBottom: 25 }}>
           {steps.map((label, idx) => (
             <li key={label} className={idx === activeStep ? 'active' : ''}>{label}</li>
           ))}
         </ul>
-
-        {/* ========== 所有步骤内容 - 使用 display 控制显示 ========== */}
-        
         {/* Step 0 基本信息 */}
         <div style={{ display: activeStep === 0 ? 'block' : 'none' }}>
           <div className="input-row">
-            <label className="label label-required">项目名称</label>
-            <input
-              type="text"
-              className="info-input"
-              placeholder="示例：智能食品配送系统"
-              value={projectInfo.name}
-              onChange={e => handleInputChange('name', e.target.value)}
-            />
+            <label className="label label-required">公司/单位</label>
+            <input type="text" className="info-input" placeholder="公司/单位名称" value={info.company} onChange={e => handleInputChange('company', e.target.value)} />
           </div>
-
+          <div className="input-row">
+            <label className="label label-required">职位</label>
+            <input type="text" className="info-input" placeholder="职位/岗位" value={info.position} onChange={e => handleInputChange('position', e.target.value)} />
+          </div>
           <div className="input-row">
             <label className="label label-required">时间</label>
-            <input
-              type="text"
-              className="info-input"
-              placeholder="2024.05 - 2024.09"
-              value={projectInfo.time}
-              onChange={e => handleInputChange('time', e.target.value)}
-            />
+            <input type="text" className="info-input" placeholder="2023.07 - 2023.12" value={info.time} onChange={e => handleInputChange('time', e.target.value)} />
           </div>
-
           <div className="input-row">
-            <label className="label">项目简介<span className="chip-optional">可选</span></label>
-            <input
-              type="text"
-              className="info-input"
-              placeholder="一句话概括项目核心价值"
-              value={projectInfo.summary}
-              onChange={e => handleInputChange('summary', e.target.value)}
-            />
+            <label className="label">简介<span className="chip-optional">可选</span></label>
+            <input type="text" className="info-input" placeholder="一句话概括" value={info.summary} onChange={e => handleInputChange('summary', e.target.value)} />
           </div>
         </div>
-
         {/* Step 1 详情 */}
         <div style={{ display: activeStep === 1 ? 'block' : 'none' }}>
           <div className="input-row">
             <label className="label label-required">详情标题</label>
-            <input
-              type="text"
-              className="info-input"
-              placeholder="如：主要职责 / 技术亮点"
-              value={projectInfo.detailTitle}
-              onChange={e => handleInputChange('detailTitle', e.target.value)}
-            />
+            <input type="text" className="info-input" placeholder="如：主要职责 / 技术亮点" value={info.detailTitle} onChange={e => handleInputChange('detailTitle', e.target.value)} />
           </div>
-
           <div>
-            <label id={`detailLabel-${itemId}`} style={{ fontWeight: 'bold' }}>
-              {projectInfo.detailTitle}
-            </label>
-            <div
-              id={detailEditorId}
-              style={{ height: '150px', marginBottom: '20px' }}
-            />
+            <label id={`detailLabel-${itemId}`} style={{ fontWeight: 'bold' }}>{info.detailTitle}</label>
+            <div id={detailEditorId} style={{ height: '150px', marginBottom: '20px' }} />
           </div>
         </div>
-
         {/* Step 2 媒体上传 */}
         <div style={{ display: activeStep === 2 ? 'block' : 'none' }}>
           <div className="upload-row">
             <label className="label">媒体文件<span className="chip-optional">可选</span></label>
-
-            <input
-              id={`fileInput-${itemId}`}
-              type="file"
-              style={{ display: 'none' }}
-              accept="image/*,video/*"
-              onChange={handleFileChange}
-            />
-
+            <input id={`fileInput-${itemId}`} type="file" style={{ display: 'none' }} accept="image/*,video/*" onChange={handleFileChange} />
             <div className="upload-actions">
-              <button
-                className="file-upload-button"
-                onClick={() => document.getElementById(`fileInput-${itemId}`).click()}
-              >
-                选择文件
-              </button>
-              <button
-                className="remove-media-button"
-                onClick={removeMedia}
-                disabled={!projectInfo.mediaFile}
-              >
-                移除媒体
-              </button>
+              <button className="file-upload-button" onClick={() => document.getElementById(`fileInput-${itemId}`).click()}>选择文件</button>
+              <button className="remove-media-button" onClick={removeMedia} disabled={!info.mediaFile}>移除媒体</button>
             </div>
-
-            <div className="upload-hint" style={{ fontSize: '12px', color: '#666' }}>
-              支持图片(自动压缩) 或 视频(≤10 MB)
-            </div>
+            <div className="upload-hint" style={{ fontSize: '12px', color: '#666' }}>支持图片(自动压缩) 或 视频(≤10 MB)</div>
           </div>
-
-          {projectInfo.mediaPreview && (
+          {info.mediaPreview && (
             <div className="upload-preview">
               <label className="upload-success-label">上传成功</label>
-              <textarea
-                className="media-description"
-                placeholder="为该媒体写一句说明（可选）"
-                value={projectInfo.mediaDescription}
-                onChange={e => handleInputChange('mediaDescription', e.target.value)}
-                style={{ height: '80px', resize: 'none', marginTop: '6px' }}
-              />
+              <textarea className="media-description" placeholder="为该媒体写一句说明（可选）" value={info.mediaDescription} onChange={e => handleInputChange('mediaDescription', e.target.value)} style={{ height: '80px', resize: 'none', marginTop: '6px' }} />
             </div>
           )}
         </div>
-
         {/* Step 3 其他 */}
         <div style={{ display: activeStep === 3 ? 'block' : 'none' }}>
           <div className="input-row">
             <label className="label">其他标题<span className="chip-optional">可选</span></label>
-            <input
-              type="text"
-              className="info-input"
-              placeholder="如：技术栈 / 收获"
-              value={projectInfo.otherTitle}
-              onChange={e => handleInputChange('otherTitle', e.target.value)}
-            />
+            <input type="text" className="info-input" placeholder="如：技术栈 / 收获" value={info.otherTitle} onChange={e => handleInputChange('otherTitle', e.target.value)} />
           </div>
-
           <div>
-            <label id={`otherLabel-${itemId}`} style={{ fontWeight: 'bold' }}>
-              {projectInfo.otherTitle}
-            </label>
-            <div
-              id={otherEditorId}
-              style={{ height: '150px', marginBottom: '20px' }}
-            />
+            <label id={`otherLabel-${itemId}`} style={{ fontWeight: 'bold' }}>{info.otherTitle}</label>
+            <div id={otherEditorId} style={{ height: '150px', marginBottom: '20px' }} />
           </div>
         </div>
-
         {/* 步骤切换 */}
         <div className="step-actions">
           {activeStep > 0 && (
@@ -442,4 +345,4 @@ function Project({
   );
 }
 
-export default Project;
+export default WorkInternship; 
