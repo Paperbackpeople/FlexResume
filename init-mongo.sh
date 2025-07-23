@@ -14,22 +14,22 @@ if [ -f "/docker-entrypoint-initdb.d/mongodb_dump.tar.gz" ]; then
     cd /tmp
     tar -xzf /docker-entrypoint-initdb.d/mongodb_dump.tar.gz
     
-    # 恢复数据到数据库
-    if [ -d "/tmp/dump" ]; then
+    # 恢复数据到数据库（修正目录结构）
+    if [ -d "/tmp/mongodb_dump" ]; then
         echo "正在恢复数据库..."
         mongorestore --host localhost --port 27017 \
                      --username $MONGO_INITDB_ROOT_USERNAME \
                      --password $MONGO_INITDB_ROOT_PASSWORD \
                      --authenticationDatabase admin \
                      --db $MONGO_INITDB_DATABASE \
-                     /tmp/dump/$MONGO_INITDB_DATABASE
+                     /tmp/mongodb_dump/$MONGO_INITDB_DATABASE
         echo "数据恢复完成"
     else
-        echo "未找到dump目录，跳过数据恢复"
+        echo "未找到mongodb_dump目录，跳过数据恢复"
     fi
     
     # 清理临时文件
-    rm -rf /tmp/dump
+    rm -rf /tmp/mongodb_dump
 else
     echo "未找到备份文件，执行基础初始化..."
     

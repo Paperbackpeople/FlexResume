@@ -11,7 +11,7 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      - mongodb_data:/data/db
+      - ./mongo-data:/data/db
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
       - ./mongodb_dump.tar.gz:/docker-entrypoint-initdb.d/mongodb_dump.tar.gz:ro
       - ./init-mongo.sh:/docker-entrypoint-initdb.d/init-mongo.sh:ro
@@ -62,9 +62,9 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - SERVER_PORT=8081
-      - FRONTEND_URL=http://${SERVER_IP:-101.34.235.142}:${FRONTEND_PORT:-8080}
+      - FRONTEND_URL=https://${DOMAIN_NAME:-www.flexresume.me}
       - DOMAIN_NAME=${DOMAIN_NAME:-www.flexresume.me}
-      - CORS_ALLOWED_ORIGINS=http://${SERVER_IP:-101.34.235.142}:${FRONTEND_PORT:-8080},http://localhost:3000,http://${DOMAIN_NAME:-www.flexresume.me}
+      - CORS_ALLOWED_ORIGINS=https://www.flexresume.me,https://flexresume.me,http://${SERVER_IP:-45.76.146.146}:${FRONTEND_PORT:-8080},http://localhost:3000
     env_file:
       - config.env
     depends_on:
@@ -120,8 +120,10 @@ services:
     volumes:
       - ./frontend/build:/usr/share/nginx/html
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     ports:
       - "${NGINX_PORT:-80}:80"
+      - "443:443"
     depends_on:
       - backend
       - frontend
@@ -144,8 +146,6 @@ services:
           cpus: '0.1'
 
 volumes:
-  mongodb_data:
-    driver: local
   redis_data:
     driver: local
 

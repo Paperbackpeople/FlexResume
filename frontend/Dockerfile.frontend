@@ -15,7 +15,6 @@ ENV REACT_APP_BACKEND_PORT=${REACT_APP_BACKEND_PORT}
 ENV REACT_APP_FRONTEND_PORT=${REACT_APP_FRONTEND_PORT}
 
 COPY . .
-RUN npm config set registry https://mirrors.tencent.com/npm/
 RUN npm install && npm run build
  
 FROM nginx:alpine
