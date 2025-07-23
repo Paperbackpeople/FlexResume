@@ -1,3 +1,7 @@
+# 生产环境访问
+
+请通过 https://www.flexresume.me 访问前端页面。
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
