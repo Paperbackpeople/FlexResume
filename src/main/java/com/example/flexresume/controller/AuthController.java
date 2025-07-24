@@ -23,7 +23,10 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest req) {
         if (userRepository.findByEmail(req.getEmail()) != null) {
-            return ResponseEntity.badRequest().body("用户已存在");
+            // 返回 JSON
+            Map<String, Object> result = new HashMap<>();
+            result.put("error", "用户已存在");
+            return ResponseEntity.badRequest().body(result);
         }
         String hash = passwordEncoder.encode(req.getPassword());
         User user = new User();
@@ -31,7 +34,9 @@ public class AuthController {
         user.setPassword(hash);
         user.setVersion(1);
         userRepository.save(user);
-        return ResponseEntity.ok("注册成功");
+        Map<String, Object> result = new HashMap<>();
+        result.put("message", "注册成功");
+        return ResponseEntity.ok(result);
     }
 
     @PostMapping("/login")

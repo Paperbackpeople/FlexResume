@@ -4,7 +4,8 @@ import {
   fetchEducationInfo, 
   fetchProjectInfo, 
   fetchSkillInfo,
-  fetchWorkInternshipInfo
+  fetchWorkInternshipInfo,
+  saveAllDataToCache
 } from '../utils/api';
 
 export const useResumeData = (username, version) => {
@@ -30,6 +31,14 @@ export const useResumeData = (username, version) => {
   const loadResumeData = useCallback(async () => {
     if (!username || !version) {
       setLoading(false);
+      setError(null); // 新增：不报错
+      setResumeData({
+        personalInfo: null,
+        education: null,
+        projects: null,
+        workinternship: null,
+        skills: null
+      });
       return;
     }
 
@@ -45,6 +54,23 @@ export const useResumeData = (username, version) => {
       setLoading(true);
       setError(null);
 
+      // 为每个API调用添加重试机制
+      const retryFetch = async (fetchFn, retries = 2) => {
+        for (let i = 0; i <= retries; i++) {
+          try {
+            return await fetchFn();
+          } catch (error) {
+            if (i === retries) throw error;
+            if (error.message.includes('502') || error.message.includes('Bad Gateway')) {
+              console.log(`API调用失败，${2 - i}次重试剩余...`);
+              await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+            } else {
+              throw error;
+            }
+          }
+        }
+      };
+
       const [
         personalInfo,
         education,
@@ -52,11 +78,11 @@ export const useResumeData = (username, version) => {
         workinternship,
         skills
       ] = await Promise.all([
-        fetchPersonalInfo(username, version),
-        fetchEducationInfo(username, version),
-        fetchProjectInfo(username, version),
-        fetchWorkInternshipInfo(username, version),
-        fetchSkillInfo(username, version)
+        retryFetch(() => fetchPersonalInfo(username, version)),
+        retryFetch(() => fetchEducationInfo(username, version)),
+        retryFetch(() => fetchProjectInfo(username, version)),
+        retryFetch(() => fetchWorkInternshipInfo(username, version)),
+        retryFetch(() => fetchSkillInfo(username, version))
       ]);
 
       setResumeData({
@@ -68,7 +94,12 @@ export const useResumeData = (username, version) => {
       });
     } catch (err) {
       console.error('Error loading resume data:', err);
-      setError('加载简历数据失败');
+      // 如果是网络错误，提供更友好的错误信息
+      if (err.message.includes('502') || err.message.includes('Bad Gateway')) {
+        setError('服务器暂时不可用，请稍后再试');
+      } else {
+        setError('加载简历数据失败');
+      }
     } finally {
       setLoading(false);
     }
@@ -102,7 +133,6 @@ export const useResumeData = (username, version) => {
     refreshTimeoutRef.current = setTimeout(async () => {
       try {
         setIsRefreshing(true);
-        console.log('开始手动刷新数据...');
 
         const [
           personalInfo,
@@ -136,10 +166,10 @@ export const useResumeData = (username, version) => {
             JSON.stringify(prevData.skills) !== JSON.stringify(newData.skills);
           
           if (hasChanged) {
-            console.log('检测到数据更新，刷新预览');
+            // 立即保存数据到Redis缓存
+            saveAllDataToCache(newData, username, version);
             return newData;
           } else {
-            console.log('数据无变化');
             return prevData;
           }
         });
@@ -151,7 +181,7 @@ export const useResumeData = (username, version) => {
       } finally {
         setIsRefreshing(false);
       }
-    }, 500); // 500ms 防抖延迟
+    }, 1000); // 500ms 防抖延迟
   }, [username, version, isRefreshing]);
 
   // 清理定时器

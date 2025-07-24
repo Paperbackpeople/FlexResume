@@ -18,6 +18,7 @@ function App() {
     const [version, setVersion] = useState(1);
     const [isSmallScreen, setIsSmallScreen] = useState(false);
     const [isLogin, setIsLogin] = useState(false);
+    const [isPublishing, setIsPublishing] = useState(false);
 
     // 动态检测屏幕大小
     useEffect(() => {
@@ -120,8 +121,20 @@ function App() {
                 <div className="glass-mask">
                     <img className="glass-bg" src={process.env.PUBLIC_URL + '/image.png'} alt="bg" />
                     <div className="glass-title">FlexResume</div>
-                    <LoginModal onLogin={token => {
-                        localStorage.setItem('token', token);
+                    <LoginModal onLogin={(loginData) => {
+                        // 登录成功后处理
+                        localStorage.setItem('token', loginData.token);
+                        localStorage.setItem('userId', loginData.userId);
+                        
+                        // 直接使用传递的userId设置用户信息
+                        if (loginData.userId) {
+                            setUsername(loginData.userId);
+                            setVersion(1);
+                            console.log('登录成功，设置用户数据:', loginData.userId, '版本:', 1);
+                        } else {
+                            console.error('登录响应中缺少userId');
+                        }
+                        
                         setIsLogin(true);
                     }} />
                 </div>
@@ -133,31 +146,53 @@ function App() {
                         <h1>Preview</h1>
                         {/* 发布按钮放在 preview 区域右上角 */}
                         <button
-                          className="publish-btn"
+                          className={`publish-btn ${isPublishing ? 'publishing' : ''}`}
                           onClick={async () => {
+                            if (isPublishing) return;
+                            
                             const id = username || localStorage.getItem('userId');
                             const version = 1;
-                            // 收集所有简历数据
-                            const snapshot = resumeDataHook.resumeData;
+                            
                             try {
+                              setIsPublishing(true);
+                              
+                              // 直接发布，后端会在发布前强制刷新缓存到数据库
+                              // 然后从数据库获取最新数据作为快照
                               const res = await fetch('/api/publish', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ userId: id, version, snapshot }),
+                                headers: { 
+                                  'Content-Type': 'application/json',
+                                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                                },
+                                body: JSON.stringify({ 
+                                  userId: id, 
+                                  version, 
+                                  snapshot: resumeDataHook.resumeData // 后端会用最新数据库数据覆盖
+                                }),
                               });
+                              
                               const data = await res.json();
                               if (res.ok) {
-                                alert('发布成功！');
+                                // 成功直接跳转
                                 window.open(`/publish/${id}`, '_blank');
                               } else {
+                                // 失败才弹窗
                                 alert(data.message || '发布失败');
                               }
                             } catch (e) {
+                              console.error('发布失败:', e);
                               alert('网络错误，发布失败');
+                            } finally {
+                              setIsPublishing(false);
                             }
                           }}
+                          disabled={isPublishing}
                         >
-                          发布
+                          {isPublishing ? (
+                            <span className="loading-spinner">⏳</span>
+                          ) : (
+                            '发布'
+                          )}
                         </button>
                         <ErrorBoundary>
                         <ResumePreview username={username} version={version} />

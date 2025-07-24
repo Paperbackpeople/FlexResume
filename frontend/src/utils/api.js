@@ -14,13 +14,11 @@ function isLoggedIn() {
   return !!(token && userId);
 }
 
-// 获取token和userId的工具函数
+// 获取token的工具函数
 function getAuthHeaders() {
   const token = localStorage.getItem('token');
-  const userId = localStorage.getItem('userId');
   const headers = {};
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  if (userId) headers['X-User-Id'] = userId;
   return headers;
 }
 
@@ -164,5 +162,128 @@ export const fetchWorkInternshipInfo = async (username, version) => {
   } catch (error) {
     console.error('Error fetching workinternship info:', error);
     return null;
+  }
+};
+
+// 批量保存所有数据到Redis缓存
+export const saveAllDataToCache = async (resumeData, username, version) => {
+  if (!isLoggedIn()) {
+    console.log('用户未登录，跳过数据保存');
+    return false;
+  }
+
+  const savePromises = [];
+
+  try {
+    // 保存个人信息
+    if (resumeData.personalInfo) {
+      const personalInfoData = {
+        username,
+        version,
+        profilePhoto: resumeData.personalInfo.profilePhoto || '',
+        fields: resumeData.personalInfo.fields || [{ label: '名字', value: '名字' }]
+      };
+      savePromises.push(
+        fetch(`${API_BASE_URL}/personal-info`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify(personalInfoData),
+        })
+      );
+    }
+
+    // 保存教育信息
+    if (resumeData.education) {
+      const educationData = {
+        username,
+        version,
+        education: resumeData.education.education || resumeData.education || {}
+      };
+      savePromises.push(
+        fetch(`${API_BASE_URL}/education-info`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify(educationData),
+        })
+      );
+    }
+
+    // 保存项目信息
+    if (resumeData.projects) {
+      const projectData = {
+        username,
+        version,
+        projectData: resumeData.projects || []
+      };
+      savePromises.push(
+        fetch(`${API_BASE_URL}/project-info`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify(projectData),
+        })
+      );
+    }
+
+    // 保存工作与实习信息
+    if (resumeData.workinternship) {
+      const workInternshipData = {
+        username,
+        version,
+        workInternshipData: resumeData.workinternship || []
+      };
+      savePromises.push(
+        fetch(`${API_BASE_URL}/workinternship-info`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify(workInternshipData),
+        })
+      );
+    }
+
+    // 保存技能信息
+    if (resumeData.skills) {
+      const skillData = {
+        username,
+        version,
+        content: resumeData.skills.content || ''
+      };
+      savePromises.push(
+        fetch(`${API_BASE_URL}/skill`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeaders(),
+          },
+          body: JSON.stringify(skillData),
+        })
+      );
+    }
+
+    // 并行执行所有保存操作
+    const results = await Promise.allSettled(savePromises);
+    
+    // 检查结果
+    const failedRequests = results.filter(result => result.status === 'rejected');
+    if (failedRequests.length > 0) {
+      console.error('部分数据保存失败:', failedRequests);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('批量保存数据失败:', error);
+    return false;
   }
 }; 

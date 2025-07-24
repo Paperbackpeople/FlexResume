@@ -3,6 +3,11 @@ import './Project.css';
 import Quill from 'quill';
 import 'quill/dist/quill.snow.css';
 
+/**
+ * Project card component
+ * - 静默加载 initialData 到 Quill 一次
+ * - 后续输入不会触发光标跳动
+ */
 function Project({
   itemId,
   index,
@@ -25,48 +30,77 @@ function Project({
     mediaDescription: '',
     otherTitle: '其他内容',
     otherContent: '',
+    ...initialData,
   });
 
   const steps = ['基本信息', '项目详情', '媒体上传', '其他内容'];
   const [activeStep, setActiveStep] = useState(0);
-  
-  // 添加标志位，防止循环更新
-  const isUpdatingFromParent = useRef(false);
 
-  /* 初始数据同步 */
+  /* ---------- 同步 / 控制变量 ---------- */
+  const isUpdatingFromParent = useRef(false);    // 父级同步标识
+  const hasInitialized        = useRef(false);   // 组件是否做过首次 init
+  const prevItemIdRef         = useRef(itemId);  // 记录上一个 itemId
+  const hasContentLoaded      = useRef(false);   // Quill 是否已加载过 initialData
+  const lastInitialDataRef    = useRef(JSON.stringify(initialData)); // 存储上一次的 initialData 字符串
+  const isUserTyping          = useRef(false);   // 🔥 用户正在输入标志位
+
+  /* ---------- 当父组件切卡 or 首次挂载 ---------- */
   useEffect(() => {
-    if (initialData) {
-      isUpdatingFromParent.current = true;
-      setProjectInfo(prev => ({ ...prev, ...initialData }));
-      // 在下一个事件循环中重置标志
-      setTimeout(() => {
-        isUpdatingFromParent.current = false;
-      }, 0);
+    // 🔥 如果用户正在输入，完全忽略父组件的数据更新
+    if (isUserTyping.current) {
+      return;
     }
-  }, [initialData]);
+
+    const currentDataStr = JSON.stringify(initialData);
+    const hasDataChanged = currentDataStr !== lastInitialDataRef.current;
+    
+    // 只在以下情况更新：
+    // 1. 组件首次挂载
+    // 2. 切换到不同的卡片
+    // 3. initialData 内容真正发生变化（不是引用变化）且用户没在输入
+    if (!hasInitialized.current || 
+        prevItemIdRef.current !== itemId || 
+        (hasDataChanged && !isUpdatingFromParent.current && !isUserTyping.current)) {
+      
+      if (initialData) {
+        isUpdatingFromParent.current = true;
+        setProjectInfo(prev => ({ ...prev, ...initialData }));
+        hasInitialized.current = true;
+        prevItemIdRef.current = itemId;
+        lastInitialDataRef.current = currentDataStr;
+        // 切卡后重置 Quill 内容加载标记
+        hasContentLoaded.current = false;
+        setTimeout(() => { isUpdatingFromParent.current = false; }, 0);
+      }
+    }
+  }, [itemId, initialData]);
 
   /* ========== 2. Quill 配置 ========== */
   const detailQuillRef = useRef(null);
-  const otherQuillRef = useRef(null);
+  const otherQuillRef  = useRef(null);
   const detailEditorId = `detailEditor-${itemId}`;
-  const otherEditorId = `otherEditor-${itemId}`;
+  const otherEditorId  = `otherEditor-${itemId}`;
 
-  // Quill 更新处理
+  /* Quill 内容变更 -> 更新 state & 告知父级 */
   const handleQuillChange = useCallback((key, htmlValue) => {
-    // 如果是从父组件更新的，不要触发 onChange
     if (isUpdatingFromParent.current) return;
+    
+    // 🔥 标记用户正在输入
+    isUserTyping.current = true;
     
     setProjectInfo(prev => {
       const updated = { ...prev, [key]: htmlValue };
-      // 使用 setTimeout 避免在渲染期间更新父组件
-      setTimeout(() => {
-        onChange?.(itemId, updated);
-      }, 0);
+      setTimeout(() => onChange && onChange(itemId, updated), 0);
       return updated;
     });
+
+    // 🔥 输入结束后300ms清除标志位
+    setTimeout(() => {
+      isUserTyping.current = false;
+    }, 300);
   }, [itemId, onChange]);
 
-  // 初始化 Quill
+  /* 创建 Quill 实例（仅一次） */
   useEffect(() => {
     const quillOptions = {
       theme: 'snow',
@@ -80,26 +114,22 @@ function Project({
       },
     };
 
-    // 初始化详情编辑器
+    // detail editor
     if (!detailQuillRef.current && document.getElementById(detailEditorId)) {
       detailQuillRef.current = new Quill(`#${detailEditorId}`, quillOptions);
-      
-      detailQuillRef.current.on('text-change', (delta, oldDelta, source) => {
-        // 只处理用户输入，忽略程序设置的内容
-        if (source === 'user') {
+      detailQuillRef.current.on('text-change', (d, o, src) => {
+        if (src === 'user') {
           const html = detailQuillRef.current.root.innerHTML;
           handleQuillChange('detailContent', html);
         }
       });
     }
 
-    // 初始化其他内容编辑器
+    // other editor
     if (!otherQuillRef.current && document.getElementById(otherEditorId)) {
       otherQuillRef.current = new Quill(`#${otherEditorId}`, quillOptions);
-      
-      otherQuillRef.current.on('text-change', (delta, oldDelta, source) => {
-        // 只处理用户输入
-        if (source === 'user') {
+      otherQuillRef.current.on('text-change', (d, o, src) => {
+        if (src === 'user') {
           const html = otherQuillRef.current.root.innerHTML;
           handleQuillChange('otherContent', html);
         }
@@ -107,37 +137,45 @@ function Project({
     }
   }, [detailEditorId, otherEditorId, handleQuillChange]);
 
-  // 单独处理 Quill 内容更新
+  /* ---------- 首次将 initialData 写入 Quill ---------- */
   useEffect(() => {
-    if (!initialData) return;
-    // detailContent
-    if (detailQuillRef.current && typeof initialData.detailContent === 'string') {
-      if (detailQuillRef.current.root.innerHTML !== initialData.detailContent) {
-        detailQuillRef.current.clipboard.dangerouslyPasteHTML(initialData.detailContent, 'silent');
-      }
+    if (hasContentLoaded.current) return;                   // 只执行一次
+    if (!detailQuillRef.current || !otherQuillRef.current) return; // 等实例就绪
+
+    if (typeof initialData?.detailContent === 'string') {
+      detailQuillRef.current.clipboard.dangerouslyPasteHTML(
+        initialData.detailContent,
+        'silent',
+      );
     }
-    // otherContent
-    if (otherQuillRef.current && typeof initialData.otherContent === 'string') {
-      if (otherQuillRef.current.root.innerHTML !== initialData.otherContent) {
-        otherQuillRef.current.clipboard.dangerouslyPasteHTML(initialData.otherContent, 'silent');
-      }
+    if (typeof initialData?.otherContent === 'string') {
+      otherQuillRef.current.clipboard.dangerouslyPasteHTML(
+        initialData.otherContent,
+        'silent',
+      );
     }
-  }, [initialData]);
+    hasContentLoaded.current = true;
+  }, [initialData, itemId]);
 
   /* ========== 3. 通用字段修改 ========== */
   const updateProjectField = (key, value) => {
+    // 🔥 标记用户正在输入
+    isUserTyping.current = true;
+    
     setProjectInfo(prev => {
       const updated = { ...prev, [key]: value };
-      setTimeout(() => {
-        onChange?.(itemId, updated);
-      }, 0);
+      setTimeout(() => onChange && onChange(itemId, updated), 0);
       return updated;
     });
+
+    // 🔥 输入结束后300ms清除标志位
+    setTimeout(() => {
+      isUserTyping.current = false;
+    }, 300);
   };
 
   const handleInputChange = (key, value) => {
     updateProjectField(key, value);
-
     if (key === 'detailTitle') {
       const el = document.getElementById(`detailLabel-${itemId}`);
       if (el) el.textContent = value;
@@ -148,129 +186,48 @@ function Project({
     }
   };
 
-  /* ========== 4. 媒体上传（保持原有代码） ========== */
-  const compressImage = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          
-          const maxWidth = 1024;
-          const maxHeight = 1024;
-          
-          if (width > height) {
-            if (width > maxWidth) {
-              height = Math.round((height * maxWidth) / width);
-              width = maxWidth;
-            }
-          } else {
-            if (height > maxHeight) {
-              width = Math.round((width * maxHeight) / height);
-              height = maxHeight;
-            }
-          }
-          
-          canvas.width = width;
-          canvas.height = height;
-          
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          canvas.toBlob((blob) => {
-            if (blob) {
-              resolve(blob);
-            } else {
-              reject(new Error('Failed to compress image'));
-            }
-          }, 'image/jpeg', 0.6);
-        };
-        img.onerror = () => reject(new Error('Failed to load image'));
-        img.src = e.target.result;
+  /* ========== 4. 媒体上传 ========== */
+  const compressImage = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width, h = img.height;
+        const maxW = 1024, maxH = 1024;
+        if (w > h && w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+        else if (h >= w && h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error()), 'image/jpeg', 0.6);
       };
-      reader.onerror = () => reject(new Error('Failed to read file'));
-      reader.readAsDataURL(file);
-    });
-  };
+      img.onerror = () => reject(new Error());
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error());
+    reader.readAsDataURL(file);
+  });
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
+  const handleFileChange = async e => {
+    const file = e.target.files[0]; if (!file) return;
     if (file.type.includes('image')) {
       try {
-        const compressedBlob = await compressImage(file);
-        const fileObj = new File([compressedBlob], file.name, { type: 'image/jpeg' });
-        
-        const reader = new FileReader();
-        reader.onload = () => {
-          setProjectInfo(prev => {
-            const updated = {
-              ...prev,
-              mediaType: 'image',
-              mediaFile: fileObj,
-              mediaPreview: reader.result,
-              mediaDescription: ''
-            };
-            setTimeout(() => {
-              onChange?.(itemId, updated);
-            }, 0);
-            return updated;
-          });
-        };
-        reader.readAsDataURL(compressedBlob);
-      } catch (error) {
-        console.error('图片压缩失败:', error);
-        alert('图片处理失败，请重试');
-      }
+        const blob = await compressImage(file);
+        const fileObj = new File([blob], file.name, { type: 'image/jpeg' });
+        const r = new FileReader();
+        r.onload = () => setProjectInfo(prev => { const upd = { ...prev, mediaType: 'image', mediaFile: fileObj, mediaPreview: r.result, mediaDescription: '' }; setTimeout(() => onChange && onChange(itemId, upd), 0); return upd; });
+        r.readAsDataURL(blob);
+      } catch { alert('图片处理失败'); }
     } else if (file.type.includes('video')) {
-      const maxSize = 10 * 1024 * 1024;
-      if (file.size > maxSize) {
-        alert('视频文件大小不能超过 10MB');
-        return;
-      }
-      
-      const reader = new FileReader();
-      reader.onload = () => {
-        setProjectInfo(prev => {
-          const updated = {
-            ...prev,
-            mediaType: 'video',
-            mediaFile: file,
-            mediaPreview: reader.result,
-            mediaDescription: ''
-          };
-          setTimeout(() => {
-            onChange?.(itemId, updated);
-          }, 0);
-          return updated;
-        });
-      };
-      reader.readAsDataURL(file);
-    } else {
-      alert('仅支持图片或视频文件');
-      return;
-    }
+      if (file.size > 10 * 1024 * 1024) { alert('视频不能超 10MB'); return; }
+      const r = new FileReader();
+      r.onload = () => setProjectInfo(prev => { const upd = { ...prev, mediaType: 'video', mediaFile: file, mediaPreview: r.result, mediaDescription: '' }; setTimeout(() => onChange && onChange(itemId, upd), 0); return upd; });
+      r.readAsDataURL(file);
+    } else alert('仅支持图片或视频');
   };
 
-  const removeMedia = () => {
-    setProjectInfo(prev => {
-      const updated = {
-        ...prev,
-        mediaType: '',
-        mediaFile: null,
-        mediaPreview: null,
-        mediaDescription: ''
-      };
-      setTimeout(() => {
-        onChange?.(itemId, updated);
-      }, 0);
-      return updated;
-    });
-  };
+  const removeMedia = () => setProjectInfo(prev => { const upd = { ...prev, mediaType: '', mediaFile: null, mediaPreview: null, mediaDescription: '' }; setTimeout(() => onChange && onChange(itemId, upd), 0); return upd; });
+
 
   /* ========== 5. 组件 UI ========== */
   return (

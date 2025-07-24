@@ -107,7 +107,12 @@ const LoginModal = ({ onLogin }) => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('userId', data.userId);
         console.log('登录成功，用户ID:', data.userId);
-        onLogin(data.token);
+        
+        // 传递完整的登录信息给App.js
+        onLogin({
+          token: data.token,
+          userId: data.userId
+        });
       } else {
         setError(data.message || '登录失败，请重试');
       }

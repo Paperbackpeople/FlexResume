@@ -9,4 +9,5 @@ import com.example.flexresume.model.PersonalInfo;
 public interface PersonalInfoRepository extends MongoRepository<PersonalInfo, String> {
     PersonalInfo findByUsername(String username); // 根据用户名查找
     PersonalInfo findByUsernameAndVersion(String username, int version); // 根据用户名和版本号查找
+    java.util.List<PersonalInfo> findAllByUsernameAndVersion(String username, int version); // 查找所有匹配的记录（处理重复数据）
 }

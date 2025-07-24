@@ -3,6 +3,14 @@ import Slider from '../common/Slider';
 import Education from './Education';
 import axios from 'axios';
 
+// 获取token的工具函数
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
+
 function EducationSliderWapper({ username, version }) {
     const [educationList, setEducationList] = useState([{ id: 0 }]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -39,6 +47,11 @@ function EducationSliderWapper({ username, version }) {
             console.log('用户未登录，跳过教育数据保存');
             return;
         }
+        
+        if (!username || username === 'undefined' || !version) {
+            console.log('用户名或版本无效，跳过教育数据保存', { username, version });
+            return;
+        }
 
         try {
             // 过滤空数据
@@ -60,11 +73,12 @@ function EducationSliderWapper({ username, version }) {
                 education: filteredData,
             };
 
-            // 发送保存请求
-            const response = await axios.post('/api/education-info', payload);
+            // 发送保存请求 - 添加认证头
+            const response = await axios.post('/api/education-info', payload, { headers: getAuthHeaders() });
             console.log('教育信息保存成功:', response.data);
         } catch (error) {
             console.error('保存教育信息时出错:', error);
+            console.error('错误详情:', error.response?.data);
         }
     }, [educationData, username, version]);
 
@@ -80,7 +94,10 @@ function EducationSliderWapper({ username, version }) {
             }
 
             try {
-                const res = await axios.get('/api/education-info', { params: { username, version }});
+                const res = await axios.get('/api/education-info', { 
+                    params: { username, version },
+                    headers: getAuthHeaders()
+                });
                 const doc = res.data;  // doc 就是单个对象
                 if (doc && doc.education) {
                     const eduObj = doc.education; // {education1: {...}, education2: {...}}
@@ -119,6 +136,25 @@ function EducationSliderWapper({ username, version }) {
 
         return () => clearTimeout(saveTimeoutRef.current);
     }, [educationData, saveAllEducationData]);
+
+    // 立即保存方法：清除定时器并立即保存当前变更
+    const saveImmediately = useCallback(async () => {
+        if (saveTimeoutRef.current) {
+            clearTimeout(saveTimeoutRef.current);
+            // 只有存在定时器时才说明有未保存的变更
+            await saveAllEducationData();
+        }
+    }, [saveAllEducationData]);
+
+    // 监听全局保存事件
+    useEffect(() => {
+        const handleSaveAll = () => {
+            saveImmediately();
+        };
+        
+        window.addEventListener('saveAllData', handleSaveAll);
+        return () => window.removeEventListener('saveAllData', handleSaveAll);
+    }, [saveImmediately]);
 
     // --------------------------
     // 4. 子组件 -> 父组件
@@ -175,7 +211,7 @@ function EducationSliderWapper({ username, version }) {
                     addEducation={addItem}
                     removeEducation={() => removeItem(index)}
                     onChange={handleChildChange}
-                    initialData={educationData[`education${index + 1}`]} // 将数据传递给子组件
+                    initialData={educationData[`education${index + 1}`]}
                 />
             )}
             addItem={addEducation}

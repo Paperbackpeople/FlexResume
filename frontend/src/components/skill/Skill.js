@@ -4,6 +4,14 @@ import 'quill/dist/quill.snow.css';
 import './Skill.css';
 import axios from 'axios';
 
+// 获取token的工具函数
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
+
 const Skill = ({ username, version }) => {
     const quillRef = useRef(null);       // Quill 编辑器引用
     const saveTimeout = useRef(null);    // 保存定时器引用
@@ -66,7 +74,9 @@ const Skill = ({ username, version }) => {
         }
 
         try {
-            const response = await axios.get(`/api/skill/${username}/${version}`);
+            const response = await axios.get(`/api/skill/${username}/${version}`, {
+                headers: getAuthHeaders()
+            });
             const fetchedContent = response.data.content;
 
             if (fetchedContent) {
@@ -93,18 +103,44 @@ const Skill = ({ username, version }) => {
             console.log('用户未登录，跳过技能数据保存');
             return;
         }
+        
+        if (!username || username === 'undefined' || !version) {
+            console.log('用户名或版本无效，跳过技能数据保存', { username, version });
+            return;
+        }
 
         if (!quillRef.current) return;
         const htmlContent = quillRef.current.root.innerHTML; // 获取编辑器内容
         const data = { username, version, content: htmlContent };
 
         try {
-            await axios.post('/api/skill', data);
+            await axios.post('/api/skill', data, {
+                headers: getAuthHeaders()
+            });
             console.log('自动保存成功:', new Date().toLocaleString());
         } catch (error) {
             console.error('自动保存失败:', error);
         }
     }, [username, version]);
+
+    // 立即保存方法：清除定时器并立即保存当前变更
+    const saveImmediately = useCallback(async () => {
+        if (saveTimeout.current) {
+            clearTimeout(saveTimeout.current);
+            // 只有存在定时器时才说明有未保存的变更
+            await saveSkillContent();
+        }
+    }, [saveSkillContent]);
+
+    // 监听全局保存事件
+    useEffect(() => {
+        const handleSaveAll = () => {
+            saveImmediately();
+        };
+        
+        window.addEventListener('saveAllData', handleSaveAll);
+        return () => window.removeEventListener('saveAllData', handleSaveAll);
+    }, [saveImmediately]);
 
     /**
      * 2. 加载后端数据，当 username 或 version 变化时触发

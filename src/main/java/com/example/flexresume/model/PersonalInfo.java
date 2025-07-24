@@ -1,6 +1,6 @@
 package com.example.flexresume.model;
 
-import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.annotation.Id;
 import lombok.Data;
@@ -8,11 +8,11 @@ import java.util.List;
 
 @Data
 @Document(collection = "personal_info")
+@CompoundIndex(def = "{'username': 1, 'version': 1}", unique = true)
 public class PersonalInfo {
     @Id
     private String id;
 
-    @Indexed(unique = true) // 全局唯一索引，确保 username 不重复
     private String username; // 用户名
 
     private int version; // 版本号，每个用户可以有多个版本

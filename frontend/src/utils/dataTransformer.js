@@ -14,7 +14,10 @@ export const transformEducationData = (educationData) => {
     return null;
   }
 
-  return educationData;
+  // 确保返回正确的格式
+  return {
+    education: educationData.education
+  };
 };
 
 // 转换个人信息数据

@@ -1,7 +1,24 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Slider from '../common/Slider';
 import Project from './Project';
 import axios from 'axios';
+
+// 获取token的工具函数
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
+
+// 把验证函数移到组件外部，避免依赖问题
+const isValidProjectData = (dataObj) => {
+  return Object.values(dataObj).some((val) => {
+    if (val == null) return false;
+    if (typeof val === 'string' && val.trim() === '') return false;
+    return true;
+  });
+};
 
 function ProjectSliderWrapper({ username, version }) {
   // projectList 用来控制 Slider 里的卡片渲染。这里用 { id: 'project0' } 这种形式
@@ -35,6 +52,7 @@ function ProjectSliderWrapper({ username, version }) {
       try {
         const res = await axios.get('/api/project-info', {
           params: { username, version },
+          headers: getAuthHeaders()
         });
         console.log('Fetched project data:', res.data);
 
@@ -72,20 +90,18 @@ function ProjectSliderWrapper({ username, version }) {
     fetchProjectData();
   }, [username, version]);
 
-  // 判断卡片是否为空（至少有一个字段非空即认为有效）
-  const isValidProjectData = (dataObj) => {
-    return Object.values(dataObj).some((val) => {
-      if (val == null) return false;
-      if (typeof val === 'string' && val.trim() === '') return false;
-      return true;
-    });
-  };
 
-  // 3. 保存函数
+
+  // 3. 保存函数 - 先定义以避免循环依赖
   const saveAllProjects = useCallback(async () => {
-    // 检查登录状态
+    // 检查登录状态和用户名有效性
     if (!isLoggedIn()) {
       console.log('用户未登录，跳过项目数据保存');
+      return;
+    }
+    
+    if (!username || username === 'undefined' || !version) {
+      console.log('用户名或版本无效，跳过项目数据保存', { username, version });
       return;
     }
 
@@ -108,12 +124,31 @@ function ProjectSliderWrapper({ username, version }) {
         version,
         projectData: filteredData,
       };
-      const res = await axios.post('/api/project-info', payload);
+      const res = await axios.post('/api/project-info', payload, { headers: getAuthHeaders() });
       console.log('自动保存成功:', res.data);
     } catch (error) {
       console.error('自动保存失败:', error);
     }
   }, [allProjectData, username, version]);
+
+  // 立即保存方法：清除定时器并立即保存当前变更
+  const saveImmediately = useCallback(async () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      // 只有存在定时器时才说明有未保存的变更
+      await saveAllProjects();
+    }
+  }, [saveAllProjects]);
+
+  // 监听全局保存事件
+  useEffect(() => {
+    const handleSaveAll = () => {
+      saveImmediately();
+    };
+    
+    window.addEventListener('saveAllData', handleSaveAll);
+    return () => window.removeEventListener('saveAllData', handleSaveAll);
+  }, [saveImmediately]);
 
   // 2. 当 allProjectData 改变后，10秒后自动保存
   useEffect(() => {
@@ -169,26 +204,25 @@ function ProjectSliderWrapper({ username, version }) {
   };
 
   return (
-      <Slider
-          currentIndex={currentIndex}
-          setCurrentIndex={setCurrentIndex}
-          items={projectList}
-          renderItem={(item, idx, addItem, removeItem) => (
-              <Project
-                  key={item.id}
-                  itemId={item.id} // 传入实际的id (e.g. "project0")
-                  index={idx}
-                  isLast={idx === projectList.length - 1}
-                  addProject={addItem}
-                  removeProject={() => removeItem(idx)}
-                  onChange={handleSingleProjectChange}
-                  // 传入已保存的数据
-                  initialData={allProjectData[item.id]}
-              />
-          )}
-          addItem={addProject}
-          removeItem={removeProject}
-      />
+    <Slider
+      currentIndex={currentIndex}
+      setCurrentIndex={setCurrentIndex}
+      items={projectList}
+      renderItem={useCallback((item, idx, addItem, removeItem) => (
+        <Project
+          key={item.id}
+          itemId={item.id}
+          index={idx}
+          isLast={idx === projectList.length - 1}
+          addProject={addItem}
+          removeProject={() => removeItem(idx)}
+          onChange={handleSingleProjectChange}
+          initialData={allProjectData[item.id]}
+        />
+      ), [allProjectData, handleSingleProjectChange])}
+      addItem={addProject}
+      removeItem={removeProject}
+    />
   );
 }
 

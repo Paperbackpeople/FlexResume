@@ -2,11 +2,19 @@ import React from 'react';
 import './Resume.css';
 
 const EducationDetail = ({ educationId, educationData, onClose }) => {
-  if (!educationData || !educationData.education || !educationData.education[educationId]) {
+  if (
+    !educationData ||
+    !educationData.education ||
+    !educationData.education[educationId]
+  ) {
     return null;
   }
 
   const education = educationData.education[educationId];
+
+  const validAwards = (education.awards || []).filter(
+    aw => (aw.time?.trim() || aw.name?.trim())
+  );
 
   return (
     <div className="education-detail">
@@ -28,7 +36,7 @@ const EducationDetail = ({ educationId, educationData, onClose }) => {
               )}
             </p>
           </div>
-          
+
           {education.courses && education.courses.length > 0 && (
             <div className="modules">
               <h3>主要课程</h3>
@@ -40,11 +48,11 @@ const EducationDetail = ({ educationId, educationData, onClose }) => {
             </div>
           )}
 
-          {education.awards && education.awards.length > 0 && (
+          {validAwards.length > 0 && (
             <div className="scholarships">
               <h3>奖学金</h3>
               <ul>
-                {education.awards.map((award, index) => (
+                {validAwards.map((award, index) => (
                   <li key={index} className="scholarship-item">
                     <span className="year">{award.time}</span>
                     <span className="award">{award.name}</span>

@@ -185,9 +185,86 @@ public class WriteBackScheduler {
     }
 
     /**
-     * 手动触发写回所有脏数据（管理接口可用）
+     * 手动触发写回所有脏数据（管理用途）
+     * 同步执行，确保数据立即写入数据库
      */
     public void forceWriteBackAll() {
-        writeBackDirtyData();
+        try {
+            System.out.println("开始强制写回所有脏数据...");
+            
+            Set<String> dirtyKeys = cacheService.getDirtyKeys();
+            System.out.println("发现 " + dirtyKeys.size() + " 个脏数据需要写回");
+
+            for (String dirtyKey : dirtyKeys) {
+                try {
+                    String key = dirtyKey.replace("dirty:", "");
+                    writeBackSingleData(key);
+                    System.out.println("强制写回成功: " + key);
+                } catch (Exception e) {
+                    System.err.println("强制写回失败: " + dirtyKey + ", 错误: " + e.getMessage());
+                    // 继续处理其他数据
+                }
+            }
+
+            System.out.println("强制写回完成");
+        } catch (Exception e) {
+            System.err.println("强制写回过程发生错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 只写回指定用户的脏数据（发布时使用）
+     * 同步执行，确保当前用户的数据立即写入数据库
+     */
+    public void forceWriteBackUser(String username, int version) {
+        try {
+            System.out.println("发布触发：开始强制写回用户 " + username + " 版本 " + version + " 的数据...");
+            
+            Set<String> dirtyKeys = cacheService.getDirtyKeys();
+            int userDataCount = 0;
+            int writtenCount = 0;
+
+            for (String dirtyKey : dirtyKeys) {
+                try {
+                    String key = dirtyKey.replace("dirty:", "");
+                    
+                    // 检查是否是当前用户的数据
+                    if (isUserData(key, username, version)) {
+                        userDataCount++;
+                        writeBackSingleData(key);
+                        writtenCount++;
+                        System.out.println("强制写回用户数据成功: " + key);
+                    }
+                } catch (Exception e) {
+                    System.err.println("强制写回用户数据失败: " + dirtyKey + ", 错误: " + e.getMessage());
+                    // 继续处理其他数据
+                }
+            }
+
+            System.out.println("发布触发：用户 " + username + " 版本 " + version + 
+                             " 发现 " + userDataCount + " 个脏数据，成功写回 " + writtenCount + " 个");
+        } catch (Exception e) {
+            System.err.println("强制写回用户数据过程发生错误: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 检查缓存key是否属于指定用户和版本
+     */
+    private boolean isUserData(String key, String username, int version) {
+        String[] keyParts = key.split(":");
+        if (keyParts.length < 3) {
+            return false;
+        }
+        
+        String keyUsername = keyParts[1];
+        String keyVersionStr = keyParts[2];
+        
+        try {
+            int keyVersion = Integer.parseInt(keyVersionStr);
+            return username.equals(keyUsername) && version == keyVersion;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 } 

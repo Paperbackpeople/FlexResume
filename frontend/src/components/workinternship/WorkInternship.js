@@ -12,7 +12,7 @@ function WorkInternship({
   onChange,
   initialData,
 }) {
-  // 类型：实习/正式工作
+  /* ========== 1. 本地 state & 控制变量 ========== */
   const [type, setType] = useState(initialData?.type || 'work');
   const [info, setInfo] = useState({
     time: '',
@@ -27,36 +27,79 @@ function WorkInternship({
     mediaDescription: '',
     otherTitle: '其他内容',
     otherContent: '',
-    ...initialData
+    ...initialData,
   });
+
   const steps = ['基本信息', '详情', '媒体上传', '其他内容'];
   const [activeStep, setActiveStep] = useState(0);
+
   const isUpdatingFromParent = useRef(false);
+  const hasInitialized        = useRef(false);
+  const prevItemIdRef         = useRef(itemId);
+  const hasContentLoaded      = useRef(false);   // ★ 只把 initialData 粘贴一次
+  const lastInitialDataRef    = useRef(JSON.stringify(initialData)); // 存储上一次的 initialData 字符串
+  const isUserTyping          = useRef(false);   // 🔥 用户正在输入标志位
 
+  /* ---------- 首次挂载 & 切卡 ---------- */
   useEffect(() => {
-    if (initialData) {
-      isUpdatingFromParent.current = true;
-      setInfo(prev => ({ ...prev, ...initialData }));
-      setType(initialData.type || 'work');
-      setTimeout(() => { isUpdatingFromParent.current = false; }, 0);
+    // 🔥 如果用户正在输入，完全忽略父组件的数据更新
+    if (isUserTyping.current) {
+      return;
     }
-  }, [initialData]);
 
-  // Quill 编辑器
+    const currentDataStr = JSON.stringify(initialData);
+    const hasDataChanged = currentDataStr !== lastInitialDataRef.current;
+    
+    // 只在以下情况更新：
+    // 1. 组件首次挂载
+    // 2. 切换到不同的卡片
+    // 3. initialData 内容真正发生变化（不是引用变化）且用户没在输入
+    if (!hasInitialized.current || 
+        prevItemIdRef.current !== itemId || 
+        (hasDataChanged && !isUpdatingFromParent.current && !isUserTyping.current)) {
+      
+      if (initialData) {
+        isUpdatingFromParent.current = true;
+        setInfo(prev => ({ ...prev, ...initialData }));
+        setType(initialData.type || 'work');
+        hasInitialized.current = true;
+        prevItemIdRef.current = itemId;
+        lastInitialDataRef.current = currentDataStr;
+
+        // 切卡 → 重新允许粘贴一次
+        hasContentLoaded.current = false;
+
+        setTimeout(() => { isUpdatingFromParent.current = false; }, 0);
+      }
+    }
+  }, [itemId, initialData]);
+
+  /* ========== 2. Quill 编辑器 ========== */
   const detailQuillRef = useRef(null);
-  const otherQuillRef = useRef(null);
+  const otherQuillRef  = useRef(null);
   const detailEditorId = `detailEditor-${itemId}`;
-  const otherEditorId = `otherEditor-${itemId}`;
+  const otherEditorId  = `otherEditor-${itemId}`;
 
+  /* Quill → state */
   const handleQuillChange = useCallback((key, htmlValue) => {
     if (isUpdatingFromParent.current) return;
+    
+    // 🔥 标记用户正在输入
+    isUserTyping.current = true;
+    
     setInfo(prev => {
       const updated = { ...prev, [key]: htmlValue };
-      setTimeout(() => { onChange?.(itemId, { ...updated, type }); }, 0);
+      setTimeout(() => onChange?.(itemId, { ...updated, type }), 0);
       return updated;
     });
+
+    // 🔥 输入结束后300ms清除标志位
+    setTimeout(() => {
+      isUserTyping.current = false;
+    }, 300);
   }, [itemId, onChange, type]);
 
+  /* 创建 Quill 实例（仅一次） */
   useEffect(() => {
     const quillOptions = {
       theme: 'snow',
@@ -69,19 +112,21 @@ function WorkInternship({
         ],
       },
     };
+
     if (!detailQuillRef.current && document.getElementById(detailEditorId)) {
       detailQuillRef.current = new Quill(`#${detailEditorId}`, quillOptions);
-      detailQuillRef.current.on('text-change', (delta, oldDelta, source) => {
-        if (source === 'user') {
+      detailQuillRef.current.on('text-change', (d, o, src) => {
+        if (src === 'user') {
           const html = detailQuillRef.current.root.innerHTML;
           handleQuillChange('detailContent', html);
         }
       });
     }
+
     if (!otherQuillRef.current && document.getElementById(otherEditorId)) {
       otherQuillRef.current = new Quill(`#${otherEditorId}`, quillOptions);
-      otherQuillRef.current.on('text-change', (delta, oldDelta, source) => {
-        if (source === 'user') {
+      otherQuillRef.current.on('text-change', (d, o, src) => {
+        if (src === 'user') {
           const html = otherQuillRef.current.root.innerHTML;
           handleQuillChange('otherContent', html);
         }
@@ -89,28 +134,41 @@ function WorkInternship({
     }
   }, [detailEditorId, otherEditorId, handleQuillChange]);
 
+  /* ---------- 首次把 initialData 写入 Quill ---------- */
   useEffect(() => {
-    if (!initialData) return;
-    // detailContent
-    if (detailQuillRef.current && typeof initialData.detailContent === 'string') {
-      if (detailQuillRef.current.root.innerHTML !== initialData.detailContent) {
-        detailQuillRef.current.clipboard.dangerouslyPasteHTML(initialData.detailContent, 'silent');
-      }
-    }
-    // otherContent
-    if (otherQuillRef.current && typeof initialData.otherContent === 'string') {
-      if (otherQuillRef.current.root.innerHTML !== initialData.otherContent) {
-        otherQuillRef.current.clipboard.dangerouslyPasteHTML(initialData.otherContent, 'silent');
-      }
-    }
-  }, [initialData]);
+    if (hasContentLoaded.current) return;                                   // 只一次
+    if (!detailQuillRef.current || !otherQuillRef.current) return;          // 等实例
 
+    if (typeof initialData?.detailContent === 'string') {
+      detailQuillRef.current.clipboard.dangerouslyPasteHTML(
+        initialData.detailContent,
+        'silent',
+      );
+    }
+    if (typeof initialData?.otherContent === 'string') {
+      otherQuillRef.current.clipboard.dangerouslyPasteHTML(
+        initialData.otherContent,
+        'silent',
+      );
+    }
+    hasContentLoaded.current = true;
+  }, [initialData, itemId]);
+
+  /* ========== 3. 通用字段修改 ========== */
   const updateField = (key, value) => {
+    // 🔥 标记用户正在输入
+    isUserTyping.current = true;
+    
     setInfo(prev => {
       const updated = { ...prev, [key]: value };
-      setTimeout(() => { onChange?.(itemId, { ...updated, type }); }, 0);
+      setTimeout(() => onChange?.(itemId, { ...updated, type }), 0);
       return updated;
     });
+
+    // 🔥 输入结束后300ms清除标志位
+    setTimeout(() => {
+      isUserTyping.current = false;
+    }, 300);
   };
 
   const handleInputChange = (key, value) => {
@@ -345,4 +403,4 @@ function WorkInternship({
   );
 }
 
-export default WorkInternship; 
+export default WorkInternship;

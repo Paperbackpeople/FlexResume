@@ -1,5 +1,5 @@
 # 前端 Dockerfile
-FROM node:18 AS build
+FROM node:20 AS build
 WORKDIR /app
 
 # 设置构建时环境变量

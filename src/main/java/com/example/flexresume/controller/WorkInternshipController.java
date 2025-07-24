@@ -5,6 +5,7 @@ import com.example.flexresume.repository.WorkInternshipRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/workinternship-info")
@@ -13,9 +14,20 @@ public class WorkInternshipController {
     @Autowired
     private WorkInternshipRepository workInternshipRepository;
 
-    // 保存工作与实习信息
+    // 保存工作与实习信息，添加用户身份验证
     @PostMapping
-    public WorkInternshipDocument saveWorkInternship(@RequestBody WorkInternshipDocument workInternship) {
+    public ResponseEntity<?> saveWorkInternship(@RequestBody WorkInternshipDocument workInternship, HttpServletRequest request) {
+        // 获取JWT验证过的用户ID
+        String authenticatedUserId = (String) request.getAttribute("userId");
+        if (authenticatedUserId == null) {
+            return ResponseEntity.status(401).body("未授权访问");
+        }
+        
+        // 验证请求的用户名是否与当前登录用户一致
+        if (!authenticatedUserId.equals(workInternship.getUsername())) {
+            return ResponseEntity.status(403).body("无权限访问其他用户的数据");
+        }
+
         // 根据 username 查询是否已存在
         WorkInternshipDocument existing = workInternshipRepository.findByUsername(workInternship.getUsername());
 
@@ -29,21 +41,39 @@ public class WorkInternshipController {
                 existing.setVersion(workInternship.getVersion());
                 existing.setWorkInternshipData(workInternship.getWorkInternshipData());
             }
-            return workInternshipRepository.save(existing);
+            return ResponseEntity.ok(workInternshipRepository.save(existing));
         }
 
         // 如果用户不存在，插入新记录
-        return workInternshipRepository.save(workInternship);
+        return ResponseEntity.ok(workInternshipRepository.save(workInternship));
     }
 
-    // 根据用户名和版本号获取工作与实习信息
+    // 根据用户名和版本号获取工作与实习信息，添加用户身份验证
     @GetMapping
-    public ResponseEntity<WorkInternshipDocument> getWorkInternshipByUsernameAndVersion(
+    public ResponseEntity<?> getWorkInternshipByUsernameAndVersion(
             @RequestParam String username,
-            @RequestParam int version) {
+            @RequestParam int version,
+            HttpServletRequest request) {
+        
+        // 获取JWT验证过的用户ID
+        String authenticatedUserId = (String) request.getAttribute("userId");
+        if (authenticatedUserId == null) {
+            return ResponseEntity.status(401).body("未授权访问");
+        }
+        
+        // 验证请求的用户名是否与当前登录用户一致
+        if (!authenticatedUserId.equals(username)) {
+            return ResponseEntity.status(403).body("无权限访问其他用户的数据");
+        }
+        
         WorkInternshipDocument doc = workInternshipRepository.findByUsernameAndVersion(username, version).orElse(null);
         if (doc == null) {
-            return ResponseEntity.notFound().build();
+            // 返回空的WorkInternshipDocument对象而不是404
+            WorkInternshipDocument emptyDoc = new WorkInternshipDocument();
+            emptyDoc.setUsername(username);
+            emptyDoc.setVersion(version);
+            emptyDoc.setWorkInternshipData(new java.util.HashMap<>()); // 空的工作实习数据Map
+            return ResponseEntity.ok(emptyDoc);
         }
         return ResponseEntity.ok(doc);
     }

@@ -22,9 +22,12 @@
 
 .info-input {
   flex: 1 1 auto;
-  min-width: 0;
-  max-width: 50%; 
+  min-width: 120px; /* 设置最小宽度确保可读性 */
   box-sizing: border-box;
+  padding: 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  transition: border-color 0.2s;
 }
 
 .text-info {
@@ -76,20 +79,21 @@
 .input-row {
   display: flex;
   flex-direction: row;   /* 每行: 标题 + 输入框 + 按钮 并排 */
-  align-items: center;
+  align-items: flex-start; /* 改为顶部对齐，适应可能的换行 */
   flex-wrap: nowrap;     /* 不换行 */
   width: 100%;           /* 占满父容器 */
   box-sizing: border-box;
-  
+  margin-bottom: 8px;    /* 行间距 */
 }
 
 .label-container {
-  flex: 0 0 60px; /* 固定宽度 80px */
-  margin-right: 5px; /* 与输入框的间距 */
+  flex: 0 0 auto; /* 自动调整宽度 */
+  min-width: 60px; /* 最小宽度 60px */
+  max-width: 120px; /* 最大宽度 120px */
+  margin-right: 10px; /* 与输入框的间距 */
   text-align: left; /* 标题左对齐 */
-  overflow: hidden; /* 超出部分隐藏 */
-  text-overflow: ellipsis; /* 超长内容显示省略号 */
-  white-space: nowrap; /* 防止换行 */
+  word-wrap: break-word; /* 允许长词换行 */
+  overflow-wrap: break-word; /* 强制换行 */
 }
 
 
@@ -110,17 +114,27 @@
   border: none;
   background: transparent;
   outline: none;
-  color: #999;
+  color: #666;
   font-size: 14px;
-  margin-bottom: 4px;
-  margin-right: 2px; /* 如果需要更靠近输入框 */
+  font-weight: 500;
+  width: 100%;
+  padding: 4px;
+  border-radius: 3px;
+  transition: background-color 0.2s;
+}
+
+.info-label:hover,
+.info-label:focus {
+  background-color: #f8f9fa;
+  color: #333;
 }
 
 
 /* 悬浮或聚焦时显示边框 */
 .info-input:hover,
 .info-input:focus {
-  border: 1px solid #ccc;
+  border-color: #007bff;
+  outline: none;
 }
 
 /* 按钮组 */
@@ -204,8 +218,50 @@
   display: none;
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  .info-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .text-info {
+    flex: 1;
+  }
+  
+  .photo-container {
+    margin-top: 0;
+    align-self: center;
+  }
+  
+  .label-container {
+    min-width: 80px;
+    max-width: 150px;
+  }
+  
+  .info-input {
+    min-width: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .input-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .label-container {
+    max-width: none;
+    margin-right: 0;
+    margin-bottom: 4px;
+  }
+  
+  .input-and-buttons {
+    flex-direction: row;
+  }
+  
   .info-input {
     min-width: 0;
+    flex: 1;
   }
 }

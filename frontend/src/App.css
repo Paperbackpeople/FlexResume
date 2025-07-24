@@ -326,4 +326,30 @@
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   min-width: 60px;
   min-height: 28px;
+  transition: all 0.3s ease;
+}
+
+.publish-btn:hover:not(:disabled) {
+  background: linear-gradient(90deg, #2e5b87, #42b983);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.publish-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.publish-btn.publishing {
+  background: linear-gradient(90deg, #ffd700, #ff8c00);
+}
+
+.loading-spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }

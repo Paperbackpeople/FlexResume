@@ -1,7 +1,15 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Slider from '../common/Slider';
 import WorkInternship from './WorkInternship';
 import axios from 'axios';
+
+// 获取token的工具函数
+function getAuthHeaders() {
+  const token = localStorage.getItem('token');
+  const headers = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  return headers;
+}
 
 function WorkInternshipSliderWrapper({ username, version }) {
   const [workList, setWorkList] = useState([{ id: 'work0' }]);
@@ -9,12 +17,13 @@ function WorkInternshipSliderWrapper({ username, version }) {
   const [allWorkData, setAllWorkData] = useState({});
   const saveTimeoutRef = useRef(null);
 
+  // 检查登录状态
   const isLoggedIn = () => {
     const token = localStorage.getItem('token');
-    const userId = localStorage.getItem('userId');
-    return !!(token && userId);
+    return !!token;
   };
 
+  // 从后端获取工作经历数据
   useEffect(() => {
     async function fetchWorkData() {
       if (!username || !version) return;
@@ -25,6 +34,7 @@ function WorkInternshipSliderWrapper({ username, version }) {
       try {
         const res = await axios.get('/api/workinternship-info', {
           params: { username, version },
+          headers: getAuthHeaders()
         });
         if (res.data && res.data.workInternshipData) {
           const workData = res.data.workInternshipData;
@@ -62,6 +72,11 @@ function WorkInternshipSliderWrapper({ username, version }) {
       console.log('用户未登录，跳过工作经历数据保存');
       return;
     }
+    
+    if (!username || username === 'undefined' || !version) {
+      console.log('用户名或版本无效，跳过工作经历数据保存', { username, version });
+      return;
+    }
     try {
       const filteredData = {};
       Object.entries(allWorkData).forEach(([key, value]) => {
@@ -78,12 +93,33 @@ function WorkInternshipSliderWrapper({ username, version }) {
         version,
         workInternshipData: filteredData,
       };
-      const res = await axios.post('/api/workinternship-info', payload);
+      const res = await axios.post('/api/workinternship-info', payload, {
+        headers: getAuthHeaders()
+      });
       console.log('自动保存成功:', res.data);
     } catch (error) {
       console.error('自动保存失败:', error);
     }
   }, [allWorkData, username, version]);
+
+  // 立即保存方法：清除定时器并立即保存当前变更
+  const saveImmediately = useCallback(async () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      // 只有存在定时器时才说明有未保存的变更
+      await saveAllWorks();
+    }
+  }, [saveAllWorks]);
+
+  // 监听全局保存事件
+  useEffect(() => {
+    const handleSaveAll = () => {
+      saveImmediately();
+    };
+    
+    window.addEventListener('saveAllData', handleSaveAll);
+    return () => window.removeEventListener('saveAllData', handleSaveAll);
+  }, [saveImmediately]);
 
   useEffect(() => {
     if (saveTimeoutRef.current) {
@@ -135,7 +171,7 @@ function WorkInternshipSliderWrapper({ username, version }) {
       currentIndex={currentIndex}
       setCurrentIndex={setCurrentIndex}
       items={workList}
-      renderItem={(item, idx, addItem, removeItem) => (
+      renderItem={useCallback((item, idx, addItem, removeItem) => (
         <WorkInternship
           key={item.id}
           itemId={item.id}
@@ -146,7 +182,7 @@ function WorkInternshipSliderWrapper({ username, version }) {
           onChange={handleSingleWorkChange}
           initialData={allWorkData[item.id]}
         />
-      )}
+      ), [allWorkData, handleSingleWorkChange])}
       addItem={addWork}
       removeItem={removeWork}
     />
