@@ -38,12 +38,10 @@ function ProjectSliderWrapper({ username, version }) {
     return !!(token && userId);
   };
 
-  // 1. 加载后端已有项目
   useEffect(() => {
     async function fetchProjectData() {
       if (!username || !version) return;
       
-      // 检查登录状态
       if (!isLoggedIn()) {
         console.log('用户未登录，跳过项目数据获取');
         return;
@@ -56,18 +54,16 @@ function ProjectSliderWrapper({ username, version }) {
         });
         console.log('Fetched project data:', res.data);
 
-        if (res.data && res.data.projectData) {
-          const projectData = res.data.projectData;
+        const projectData = res.data?.projectData; 
+
+        if (projectData && Object.keys(projectData).length > 0) {
           const keys = Object.keys(projectData).sort();
           
-          // 修改这里的数据规范化逻辑
           const normalizedData = {};
           keys.forEach((key) => {
-            // 直接使用原始的 key，不要重新生成
             normalizedData[key] = projectData[key];
           });
 
-          // 使用原始的 key 生成列表
           const newList = keys.map((key) => ({ id: key }));
 
           setProjectList(newList);
@@ -77,10 +73,12 @@ function ProjectSliderWrapper({ username, version }) {
           setAllProjectData({});
         }
       } catch (err) {
+        setProjectList([{ id: 'project0' }]);
+        setAllProjectData({});
+
         if (process.env.NODE_ENV === 'development') {
           if (err.response && err.response.status === 404) {
-            // 仅开发环境下可选打印
-            // console.log('用户暂无项目经历数据');
+            console.log('用户暂无项目经历数据 (404)');
           } else {
             console.error('fetch project error:', err);
           }

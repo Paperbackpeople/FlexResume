@@ -82,12 +82,8 @@ function EducationSliderWapper({ username, version }) {
         }
     }, [educationData, username, version]);
 
-    // --------------------------
-    // 1. 加载时, fetch 已有数据
-    // --------------------------
     useEffect(() => {
         async function fetchData() {
-            // 检查登录状态
             if (!isLoggedIn()) {
                 console.log('用户未登录，跳过教育数据获取');
                 return;
@@ -98,9 +94,10 @@ function EducationSliderWapper({ username, version }) {
                     params: { username, version },
                     headers: getAuthHeaders()
                 });
-                const doc = res.data;  // doc 就是单个对象
-                if (doc && doc.education) {
-                    const eduObj = doc.education; // {education1: {...}, education2: {...}}
+                
+                const eduObj = res.data?.education;
+
+                if (eduObj && Object.keys(eduObj).length > 0) {
                     const newList = Object.keys(eduObj).map((key, idx) => ({ id: idx }));
                     setEducationList(newList);
                     setEducationData(eduObj);
@@ -109,9 +106,11 @@ function EducationSliderWapper({ username, version }) {
                     setEducationData({});
                 }
             } catch (error) {
+                setEducationList([{ id: 0 }]);
+                setEducationData({});
+
                 if (error.response && error.response.status === 404) {
-                    // 404 表示没有数据，这是正常的，不需要报错
-                    console.log('用户暂无教育经历数据');
+                    console.log('用户暂无教育经历数据 (404)');
                 } else {
                     console.error("Error fetching education data:", error);
                 }

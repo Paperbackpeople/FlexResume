@@ -36,12 +36,19 @@ function WorkInternshipSliderWrapper({ username, version }) {
           params: { username, version },
           headers: getAuthHeaders()
         });
-        if (res.data && res.data.workInternshipData) {
-          const workData = res.data.workInternshipData;
+
+        const workData = res.data?.workInternshipData;
+
+        if (workData && Object.keys(workData).length > 0) {
           const keys = Object.keys(workData).sort();
+
           const normalizedData = {};
-          keys.forEach((key) => { normalizedData[key] = workData[key]; });
+          keys.forEach((key) => {
+            normalizedData[key] = workData[key];
+          });
+
           const newList = keys.map((key) => ({ id: key }));
+
           setWorkList(newList);
           setAllWorkData(normalizedData);
         } else {
@@ -49,8 +56,11 @@ function WorkInternshipSliderWrapper({ username, version }) {
           setAllWorkData({});
         }
       } catch (err) {
-        if (err.response && err.response.status === 404) {
-          console.log('用户暂无工作经历数据');
+        setWorkList([{ id: 'work0' }]);
+        setAllWorkData({});
+
+        if (err.response && err.response.status === 404) {  
+          console.log('用户暂无工作经历数据 (404)');
         } else {
           console.error('fetch workinternship error:', err);
         }
@@ -72,7 +82,7 @@ function WorkInternshipSliderWrapper({ username, version }) {
       console.log('用户未登录，跳过工作经历数据保存');
       return;
     }
-    
+
     if (!username || username === 'undefined' || !version) {
       console.log('用户名或版本无效，跳过工作经历数据保存', { username, version });
       return;
@@ -116,7 +126,7 @@ function WorkInternshipSliderWrapper({ username, version }) {
     const handleSaveAll = () => {
       saveImmediately();
     };
-    
+
     window.addEventListener('saveAllData', handleSaveAll);
     return () => window.removeEventListener('saveAllData', handleSaveAll);
   }, [saveImmediately]);

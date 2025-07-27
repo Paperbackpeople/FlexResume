@@ -9,6 +9,8 @@ const LoginModal = ({ onLogin }) => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // --- All your validation functions (isValidEmail, isValidPhone, validatePassword) remain the same ---
+  // ... (keep them here)
   // 验证邮箱格式
   const isValidEmail = (email) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -52,26 +54,50 @@ const LoginModal = ({ onLogin }) => {
     };
   };
 
+
+  // --- NEW: Refactored login logic into a helper function ---
+  const performLogin = async (loginAccount, loginPassword) => {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: loginAccount, password: loginPassword }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      // If login fails, throw an error to be caught by the caller
+      throw new Error(data.message || '登录失败');
+    }
+
+    // Login successful, save data and call the parent callback
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('userId', data.userId);
+    console.log('登录成功，用户ID:', data.userId);
+    
+    onLogin({
+      token: data.token,
+      userId: data.userId
+    });
+  };
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // 验证输入
+    // --- All your validation logic remains the same ---
     if (!account || !password || (mode === 'register' && !confirm)) {
       setError('请填写所有字段');
       setIsLoading(false);
       return;
     }
-
-    // 验证邮箱或手机号格式
     if (!isValidEmail(account) && !isValidPhone(account)) {
       setError('请输入有效的邮箱地址或手机号');
       setIsLoading(false);
       return;
     }
-
-    // 注册时验证密码强度
     if (mode === 'register') {
       const passwordValidation = validatePassword(password);
       if (!passwordValidation.isValid) {
@@ -79,7 +105,6 @@ const LoginModal = ({ onLogin }) => {
         setIsLoading(false);
         return;
       }
-
       if (password !== confirm) {
         setError('两次密码不一致');
         setIsLoading(false);
@@ -88,37 +113,32 @@ const LoginModal = ({ onLogin }) => {
     }
 
     try {
-      const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: account,
-          password: password,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // 登录成功，保存token和userId
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('userId', data.userId);
-        console.log('登录成功，用户ID:', data.userId);
-        
-        // 传递完整的登录信息给App.js
-        onLogin({
-          token: data.token,
-          userId: data.userId
+      if (mode === 'register') {
+        // --- Step 1: Register the user ---
+        const registerResponse = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: account, password: password }),
         });
+
+        const registerData = await registerResponse.json();
+
+        if (!registerResponse.ok) {
+          // If registration fails, show error and stop
+          throw new Error(registerData.message || '注册失败');
+        }
+
+        // --- Step 2: If registration is successful, automatically log in ---
+        console.log('注册成功，正在自动登录...');
+        await performLogin(account, password);
+
       } else {
-        setError(data.message || '登录失败，请重试');
+        // --- This is the normal login flow ---
+        await performLogin(account, password);
       }
     } catch (err) {
-      console.error('登录错误:', err);
-      setError('网络错误，请检查连接');
+      console.error(`${mode === 'register' ? '注册或自动登录' : '登录'}错误:`, err);
+      setError(err.message || '发生未知错误，请重试');
     } finally {
       setIsLoading(false);
     }
@@ -172,4 +192,4 @@ const LoginModal = ({ onLogin }) => {
   );
 };
 
-export default LoginModal; 
+export default LoginModal;

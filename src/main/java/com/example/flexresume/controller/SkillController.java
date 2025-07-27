@@ -66,7 +66,7 @@ public class SkillController {
             return ResponseEntity.status(403).body("无权限访问其他用户的数据");
         }
         
-        Skill skill = skillRepository.findByUsernameAndVersion(username, version);
+        Skill skill = skillRepository.findByUsernameAndVersion(username, version).orElse(null);
         if (skill == null) {
             // 返回空的Skill对象而不是404
             Skill emptySkill = new Skill();

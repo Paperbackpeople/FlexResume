@@ -173,7 +173,7 @@ const ResumePreview = ({ username, version, isPublishMode, snapshot }) => {
                 disabled={isRefreshing}
                 title={isRefreshing ? "刷新中..." : "刷新数据"}
               >
-                {isRefreshing ? '⏳' : '🔄'}
+                {isRefreshing ? <span className="loading-spinner">⏳</span> : '🔄'}
               </button>
             )}
           </div>

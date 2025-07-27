@@ -19,21 +19,17 @@ public class PersonalInfoController {
     @Autowired
     private CacheService cacheService;
 
-    // 保存个人信息 - 优先写入缓存，添加用户身份验证
     @PostMapping
     public ResponseEntity<?> savePersonalInfo(@RequestBody PersonalInfo personalInfo, HttpServletRequest request) {
-        // 获取JWT验证过的用户ID
         String authenticatedUserId = (String) request.getAttribute("userId");
         if (authenticatedUserId == null) {
             return ResponseEntity.status(401).body("未授权访问");
         }
         
-        // 验证请求的用户名是否与当前登录用户一致
         if (!authenticatedUserId.equals(personalInfo.getUsername())) {
             return ResponseEntity.status(403).body("无权限访问其他用户的数据");
         }
         
-        // 先写入缓存（写回策略）
         String cacheKey = cacheService.buildKey("personalInfo", personalInfo.getUsername(), personalInfo.getVersion());
         cacheService.writeToCache(cacheKey, personalInfo, 10); // 缓存10分钟
         
@@ -79,13 +75,11 @@ public class PersonalInfoController {
             cacheService.evictCache(cacheKey);
         }
         
-        // 缓存未命中，从数据库读取
         PersonalInfo personalInfo = null;
         try {
-            personalInfo = personalInfoRepository.findByUsernameAndVersion(username, version);
+            personalInfo = personalInfoRepository.findByUsernameAndVersion(username, version).orElse(null);
         } catch (org.springframework.dao.IncorrectResultSizeDataAccessException e) {
-            // 处理重复记录问题，获取第一个记录
-            System.err.println("Found duplicate records for username: " + username + ", version: " + version + ". Using the first one.");
+            System.err.println("Found duplicate records for username: " + username + ", version: " + version + ". Using the first one."); 
             java.util.List<PersonalInfo> personalInfoList = personalInfoRepository.findAllByUsernameAndVersion(username, version);
             if (!personalInfoList.isEmpty()) {
                 personalInfo = personalInfoList.get(0);

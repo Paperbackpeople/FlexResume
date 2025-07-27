@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -37,24 +38,15 @@ public class WriteBackScheduler {
 
     @Autowired
     private ObjectMapper objectMapper;
-
-    /**
-     * 定期写回脏数据到数据库
-     * 每5分钟执行一次，在资源充足时写回
-     */
     @Scheduled(fixedRate = 300000) // 5分钟
     @Async
     public void writeBackDirtyData() {
         try {
-            // 获取系统负载信息（简单实现）
             if (isSystemBusy()) {
                 System.out.println("系统繁忙，跳过本次写回操作");
                 return;
             }
-
             Set<String> dirtyKeys = cacheService.getDirtyKeys();
-            System.out.println("开始写回脏数据，共 " + dirtyKeys.size() + " 个");
-
             for (String dirtyKey : dirtyKeys) {
                 try {
                     String key = dirtyKey.replace("dirty:", "");
@@ -63,16 +55,11 @@ public class WriteBackScheduler {
                     System.err.println("写回数据失败: " + dirtyKey + ", 错误: " + e.getMessage());
                 }
             }
-
-            System.out.println("写回任务完成");
         } catch (Exception e) {
             System.err.println("写回调度器发生错误: " + e.getMessage());
         }
     }
 
-    /**
-     * 立即写回指定key的数据（用于重要数据）
-     */
     @Async
     public void immediateWriteBack(String key) {
         try {
@@ -82,9 +69,6 @@ public class WriteBackScheduler {
         }
     }
 
-    /**
-     * 写回单个数据项
-     */
     private void writeBackSingleData(String key) throws Exception {
         Object cachedData = cacheService.getFromCache(key);
         if (cachedData == null) {
@@ -121,126 +105,122 @@ public class WriteBackScheduler {
                 writeBackPublish(username, version, cachedData);
                 break;
         }
-
-        // 写回成功后移除脏标记
         cacheService.removeDirtyFlag(key);
-        System.out.println("成功写回数据: " + key);
     }
 
+    // --- FIX: 以下是最终的、健壮的写回方法 ---
+
     private void writeBackPersonalInfo(String username, int version, Object data) throws Exception {
-        PersonalInfo personalInfo = objectMapper.convertValue(data, PersonalInfo.class);
-        personalInfo.setUsername(username);
-        personalInfo.setVersion(version);
-        personalInfoRepository.save(personalInfo);
+        PersonalInfo docToSave = objectMapper.convertValue(data, PersonalInfo.class);
+        
+        // 查找现有文档，如果存在，则将其 ID 赋给新文档以触发更新
+        Optional<PersonalInfo> existingDoc = personalInfoRepository.findByUsernameAndVersion(username, version);
+        existingDoc.ifPresent(personalInfo -> docToSave.setId(personalInfo.getId()));
+
+        docToSave.setUsername(username);
+        docToSave.setVersion(version);
+        personalInfoRepository.save(docToSave);
     }
 
     private void writeBackEducation(String username, int version, Object data) throws Exception {
-        EducationDocument educationDoc = objectMapper.convertValue(data, EducationDocument.class);
-        educationDoc.setUsername(username);
-        educationDoc.setVersion(version);
-        educationRepository.save(educationDoc);
+        EducationDocument docToSave = objectMapper.convertValue(data, EducationDocument.class);
+
+        Optional<EducationDocument> existingDoc = educationRepository.findByUsernameAndVersion(username, version);
+        existingDoc.ifPresent(educationDocument -> docToSave.setId(educationDocument.getId()));
+
+        docToSave.setUsername(username);
+        docToSave.setVersion(version);
+        educationRepository.save(docToSave);
     }
 
     private void writeBackProjects(String username, int version, Object data) throws Exception {
         @SuppressWarnings("unchecked")
         Map<String, Object> projectData = (Map<String, Object>) data;
-        ProjectDocument projectDoc = new ProjectDocument(username, version, projectData);
-        projectRepository.save(projectDoc);
+        ProjectDocument docToSave = new ProjectDocument(username, version, projectData);
+
+        Optional<ProjectDocument> existingDoc = projectRepository.findByUsernameAndVersion(username, version);
+        existingDoc.ifPresent(projectDocument -> docToSave.setId(projectDocument.getId()));
+        
+        projectRepository.save(docToSave);
     }
 
     private void writeBackWorkInternship(String username, int version, Object data) throws Exception {
         @SuppressWarnings("unchecked")
         Map<String, Object> workData = (Map<String, Object>) data;
-        WorkInternshipDocument workDoc = new WorkInternshipDocument(username, version, workData);
-        workInternshipRepository.save(workDoc);
+        WorkInternshipDocument docToSave = new WorkInternshipDocument(username, version, workData);
+
+        Optional<WorkInternshipDocument> existingDoc = workInternshipRepository.findByUsernameAndVersion(username, version);
+        existingDoc.ifPresent(workInternshipDocument -> docToSave.setId(workInternshipDocument.getId()));
+
+        workInternshipRepository.save(docToSave);
     }
 
     private void writeBackSkills(String username, int version, Object data) throws Exception {
-        Skill skill = objectMapper.convertValue(data, Skill.class);
-        skill.setUsername(username);
-        skill.setVersion(version);
-        skillRepository.save(skill);
+        Skill docToSave = objectMapper.convertValue(data, Skill.class);
+
+        Optional<Skill> existingDoc = skillRepository.findByUsernameAndVersion(username, version);
+        existingDoc.ifPresent(skill -> docToSave.setId(skill.getId()));
+
+        docToSave.setUsername(username);
+        docToSave.setVersion(version);
+        skillRepository.save(docToSave);
     }
 
     private void writeBackPublish(String username, int version, Object data) throws Exception {
-        PublishRecord publishRecord = objectMapper.convertValue(data, PublishRecord.class);
-        publishRecord.setUserId(username);
-        publishRecord.setVersion(version);
-        publishRecordRepository.save(publishRecord);
+        PublishRecord docToSave = objectMapper.convertValue(data, PublishRecord.class);
+
+        // 注意：根据你的Repository，这里使用 findByUserIdAndVersion
+        Optional<PublishRecord> existingDoc = publishRecordRepository.findByUserIdAndVersion(username, version);
+        existingDoc.ifPresent(publishRecord -> docToSave.setId(publishRecord.getId()));
+
+        docToSave.setUserId(username);
+        docToSave.setVersion(version);
+        publishRecordRepository.save(docToSave);
     }
 
-    /**
-     * 简单的系统负载检测
-     * 可以根据需要扩展更复杂的负载检测逻辑
-     */
+    // --- 你原来的其他方法保持不变 ---
     private boolean isSystemBusy() {
-        // 检查内存使用率
         Runtime runtime = Runtime.getRuntime();
         long totalMemory = runtime.totalMemory();
         long freeMemory = runtime.freeMemory();
         double memoryUsage = (double) (totalMemory - freeMemory) / totalMemory;
-        
-        // 如果内存使用率超过85%，认为系统繁忙
         return memoryUsage > 0.85;
     }
 
-    /**
-     * 手动触发写回所有脏数据（管理用途）
-     * 同步执行，确保数据立即写入数据库
-     */
     public void forceWriteBackAll() {
         try {
-            System.out.println("开始强制写回所有脏数据...");
-            
             Set<String> dirtyKeys = cacheService.getDirtyKeys();
-            System.out.println("发现 " + dirtyKeys.size() + " 个脏数据需要写回");
-
             for (String dirtyKey : dirtyKeys) {
                 try {
                     String key = dirtyKey.replace("dirty:", "");
                     writeBackSingleData(key);
-                    System.out.println("强制写回成功: " + key);
                 } catch (Exception e) {
                     System.err.println("强制写回失败: " + dirtyKey + ", 错误: " + e.getMessage());
-                    // 继续处理其他数据
                 }
             }
-
-            System.out.println("强制写回完成");
         } catch (Exception e) {
             System.err.println("强制写回过程发生错误: " + e.getMessage());
         }
     }
 
-    /**
-     * 只写回指定用户的脏数据（发布时使用）
-     * 同步执行，确保当前用户的数据立即写入数据库
-     */
     public void forceWriteBackUser(String username, int version) {
         try {
             System.out.println("发布触发：开始强制写回用户 " + username + " 版本 " + version + " 的数据...");
-            
             Set<String> dirtyKeys = cacheService.getDirtyKeys();
             int userDataCount = 0;
             int writtenCount = 0;
-
             for (String dirtyKey : dirtyKeys) {
                 try {
                     String key = dirtyKey.replace("dirty:", "");
-                    
-                    // 检查是否是当前用户的数据
                     if (isUserData(key, username, version)) {
                         userDataCount++;
                         writeBackSingleData(key);
                         writtenCount++;
-                        System.out.println("强制写回用户数据成功: " + key);
                     }
                 } catch (Exception e) {
                     System.err.println("强制写回用户数据失败: " + dirtyKey + ", 错误: " + e.getMessage());
-                    // 继续处理其他数据
                 }
             }
-
             System.out.println("发布触发：用户 " + username + " 版本 " + version + 
                              " 发现 " + userDataCount + " 个脏数据，成功写回 " + writtenCount + " 个");
         } catch (Exception e) {
@@ -248,18 +228,11 @@ public class WriteBackScheduler {
         }
     }
 
-    /**
-     * 检查缓存key是否属于指定用户和版本
-     */
     private boolean isUserData(String key, String username, int version) {
         String[] keyParts = key.split(":");
-        if (keyParts.length < 3) {
-            return false;
-        }
-        
+        if (keyParts.length < 3) return false;
         String keyUsername = keyParts[1];
         String keyVersionStr = keyParts[2];
-        
         try {
             int keyVersion = Integer.parseInt(keyVersionStr);
             return username.equals(keyUsername) && version == keyVersion;
@@ -267,4 +240,4 @@ public class WriteBackScheduler {
             return false;
         }
     }
-} 
+}
