@@ -120,9 +120,8 @@ services:
     image: nginx:alpine
     container_name: resume-nginx
     volumes:
-      - ./frontend/build:/usr/share/nginx/html
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - /etc/letsencrypt:/etc/letsencrypt:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
     ports:
       - "${NGINX_PORT:-80}:80"
       - "443:443"
@@ -130,7 +129,7 @@ services:
       - backend
       - frontend
     environment:
-      - SERVER_IP=${SERVER_IP:-101.34.235.142}
+      - SERVER_IP=${SERVER_IP:-60.205.155.237}
       - DOMAIN_NAME=${DOMAIN_NAME:-www.flexresume.me}
       - BACKEND_PORT=${BACKEND_PORT:-8081}
     env_file:
